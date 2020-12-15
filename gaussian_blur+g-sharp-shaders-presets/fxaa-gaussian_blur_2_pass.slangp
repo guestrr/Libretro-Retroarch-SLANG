@@ -1,0 +1,29 @@
+shaders = 4
+
+shader0 = shaders/fxaa/fxaa.slang
+filter_linear0 = true
+scale_type_x0 = source
+scale_x0 = 1.0
+scale_type_y0 = source
+scale_y0 = 1.0 
+
+shader1 = shaders/gaussian_horizontal.slang
+filter_linear1 = false
+scale_type_x1 = viewport
+scale_x1 = 1.0
+scale_type_y1 = source
+scale_y1 = 1.0 
+
+shader2 = shaders/gaussian_vertical.slang
+filter_linear2 = false
+scale_type_x2 = viewport
+scale_x2 = 1.0
+scale_type_y2 = viewport
+scale_y2 = 1.0
+
+shader3 = shaders/g-sharp_deblur.slang
+filter_linear3 = true
+scale_type_x3 = viewport
+scale_x3 = 1.0
+scale_type_y3 = viewport
+scale_y3 = 1.0

@@ -1,0 +1,22 @@
+shaders = 3
+
+shader0 = shaders/g-sharp_resampler_horizontal_jpass.slang
+filter_linear0 = false
+scale_type_x0 = viewport
+scale_x0 = 1.0
+scale_type_y0 = source
+scale_y0 = 1.0 
+
+shader1 = shaders/g-sharp_resampler_vertical_jpass.slang
+filter_linear1 = false
+scale_type_x1 = viewport
+scale_x1 = 1.0
+scale_type_y1 = viewport
+scale_y1 = 1.0
+
+shader2 = shaders/g-sharp_deblur.slang
+filter_linear2 = true
+scale_type_x2 = viewport
+scale_x2 = 1.0
+scale_type_y2 = viewport
+scale_y2 = 1.0
