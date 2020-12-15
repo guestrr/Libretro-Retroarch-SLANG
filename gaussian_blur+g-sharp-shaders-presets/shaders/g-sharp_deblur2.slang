@@ -36,6 +36,7 @@ layout(push_constant) uniform Push
 	float SMARTHIGH2;
 	float SMETHOD2;
 	float SMSTRENGTH2;
+	float MAXDEBLUR2;	
 } params;
 
 #pragma parameter bogus-line5 "-------------------------------------------------" 0.0 0.0 0.0 0.0 
@@ -51,6 +52,9 @@ layout(push_constant) uniform Push
 
 #pragma parameter DEBLUR2 "Deblur Strength" 0.0 0.0 25.0 1.0
 #define DEBLUR2 params.DEBLUR2
+
+#pragma parameter MAXDEBLUR2 "Maximum Deblur Effect Limit" 0.9 0.0 1.0 0.05
+#define MAXDEBLUR2 params.MAXDEBLUR2
 
 #pragma parameter SMARTLOW2 "Smart Deblur Smoothing Threshold" 0.0 0.0 1.0 0.05
 #define SMARTLOW2 params.SMARTLOW2
@@ -133,15 +137,17 @@ void main()
 		x = 1.0;
 		do
 		{
-			df1 = max(res-cmin, 0.0);
-			df2 = max(cmax-res, 0.0);
+			df1 = res-cmin;
+			df2 = cmax-res;
 			ratio = abs(df1-df2)/(df1+df2+0.0000001);
 			df1 = max(smoothstep( -0.0001, 1.0, df1/contrast), 0.0001);
 			df2 = max(smoothstep( -0.0001, 1.0, df2/contrast), 0.0001);
-			res = clamp(mix(color, (cmax*df1 + cmin*df2)/(df1+df2), DEBLUR2*ratio), cmin, cmax);
+			res = mix(color, (cmax*df1 + cmin*df2)/(df1+df2), DEBLUR2*ratio);
 			x = x + 1.0;
 			
 		} while (x <= DIT2);
+		
+		res = clamp(res, cmin + (1.0-MAXDEBLUR2)*(color - cmin), cmax - (1.0-MAXDEBLUR2)*(cmax-color));
 		
 		vec3 c00 = COMPAT_TEXTURE(Source, vTexCoord  -dx  -dy).rgb;
 		vec3 c20 = COMPAT_TEXTURE(Source, vTexCoord  +dx  -dy).rgb;		
