@@ -189,7 +189,10 @@ void main()
 
 		color = clamp(color, nmin, nmax);
 
-		contrast = smoothstep (min(SMARTLOW,SMARTHIGH-0.00001), SMARTHIGH, mix(abs(orig-color), nmax - nmin, SMETHOD));
+		vec3 ccalc = mix(abs(orig-color), nmax - nmin, SMETHOD);
+		float scalc = max(max(ccalc.r,ccalc.g), ccalc.b);
+
+		contrast = smoothstep (min(SMARTLOW,SMARTHIGH-0.00001), SMARTHIGH, scalc.xxx);
 		
 		color = mix(color, mix(orig, color, contrast), SMSTRENGTH);
 	}	
