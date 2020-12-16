@@ -142,12 +142,12 @@ void main()
 			ratio = abs(df1-df2)/(df1+df2+0.0000001);
 			df1 = max(smoothstep( -0.0001, 1.0, df1/contrast), 0.0001);
 			df2 = max(smoothstep( -0.0001, 1.0, df2/contrast), 0.0001);
-			res = mix(color, (cmax*df1 + cmin*df2)/(df1+df2), DEBLUR2*ratio);
+			res = mix(color, (cmax*df1 + cmin*df2)/(df1+df2), min(DEBLUR2*ratio, MAXDEBLUR2));
 			x = x + 1.0;
 			
-		} while (x <= DIT2);
+		} while (x <= DIT);
 		
-		res = clamp(res, cmin + (1.0-MAXDEBLUR2)*(color - cmin), cmax - (1.0-MAXDEBLUR2)*(cmax-color));
+		res = clamp(res, cmin, cmax);
 		
 		vec3 c00 = COMPAT_TEXTURE(Source, vTexCoord  -dx  -dy).rgb;
 		vec3 c20 = COMPAT_TEXTURE(Source, vTexCoord  +dx  -dy).rgb;		
@@ -195,7 +195,7 @@ void main()
 
 		color = clamp(color, nmin, nmax);
 
-		vec3 ccalc = mix(abs(orig-color), nmax - nmin, SMETHOD2);
+		vec3 ccalc = mix(2.0*abs(orig-color)/(orig + 0.25), nmax - nmin, SMETHOD2);
 		float scalc = max(max(ccalc.r,ccalc.g), ccalc.b);
 
 		contrast = smoothstep (min(SMARTLOW2,SMARTHIGH2-0.00001), SMARTHIGH2, scalc.xxx);

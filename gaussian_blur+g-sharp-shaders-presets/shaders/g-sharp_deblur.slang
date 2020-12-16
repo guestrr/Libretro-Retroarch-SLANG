@@ -53,7 +53,7 @@ layout(push_constant) uniform Push
 #pragma parameter DEBLUR1 "Deblur Strength" 0.0 0.0 25.0 1.0
 #define DEBLUR1 params.DEBLUR1
 
-#pragma parameter MAXDEBLUR "Maximum Deblur Effect Limit" 0.9 0.0 1.0 0.05
+#pragma parameter MAXDEBLUR "Maximum Deblur Effect Limit" 0.1 0.0 0.5 0.01
 #define MAXDEBLUR params.MAXDEBLUR
 
 #pragma parameter SMARTLOW "Smart Deblur Smoothing Threshold" 0.0 0.0 1.0 0.05
@@ -147,7 +147,8 @@ void main()
 			
 		} while (x <= DIT);
 		
-		res = clamp(res, cmin + (1.0-MAXDEBLUR)*(color - cmin), cmax - (1.0-MAXDEBLUR)*(cmax-color));
+		vec3 cldif = MAXDEBLUR * color / contrast;
+		res = clamp(res, color - cldif, color + cldif);
 		
 		vec3 c00 = COMPAT_TEXTURE(Source, vTexCoord  -dx  -dy).rgb;
 		vec3 c20 = COMPAT_TEXTURE(Source, vTexCoord  +dx  -dy).rgb;		
@@ -195,7 +196,7 @@ void main()
 
 		color = clamp(color, nmin, nmax);
 
-		vec3 ccalc = mix(abs(orig-color), nmax - nmin, SMETHOD);
+		vec3 ccalc = mix(2.0*abs(orig-color)/(orig + 0.25), nmax - nmin, SMETHOD);
 		float scalc = max(max(ccalc.r,ccalc.g), ccalc.b);
 
 		contrast = smoothstep (min(SMARTLOW,SMARTHIGH-0.00001), SMARTHIGH, scalc.xxx);
