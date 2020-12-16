@@ -108,7 +108,7 @@ void main()
 		pixel  = COMPAT_TEXTURE(Source, tex + n*dy).rgb;
 		w = gaussian(n+f) - sharp; 
 		fpx = abs(n+f-sign(n)*FPR)/FPR;
-		if (abs(n) <= FPR) { cmax = max(cmax, pixel); cmin = min(cmin, pixel); }
+		if (abs(n) <= 1.5*FPR) { cmax = max(cmax, pixel); cmin = min(cmin, pixel); }
 		if (w < 0.0) w = clamp(w, mix(-maxsharp, 0.0, pow(fpx, JPSHAR)), 0.0);
 	
 		color = color + w * pixel;
