@@ -53,7 +53,7 @@ layout(push_constant) uniform Push
 #pragma parameter DEBLUR2 "Deblur Strength" 0.0 0.0 25.0 1.0
 #define DEBLUR2 params.DEBLUR2
 
-#pragma parameter MAXDEBLUR2 "Maximum Deblur Effect Limit" 0.9 0.0 1.0 0.05
+#pragma parameter MAXDEBLUR2 "Maximum Deblur Effect Limit" 0.1 0.0 0.5 0.01
 #define MAXDEBLUR2 params.MAXDEBLUR2
 
 #pragma parameter SMARTLOW2 "Smart Deblur Smoothing Threshold" 0.0 0.0 1.0 0.05
@@ -145,9 +145,10 @@ void main()
 			res = mix(color, (cmax*df1 + cmin*df2)/(df1+df2), min(DEBLUR2*ratio, MAXDEBLUR2));
 			x = x + 1.0;
 			
-		} while (x <= DIT);
+		} while (x <= DIT2);
 		
-		res = clamp(res, cmin, cmax);
+		vec3 cldif = MAXDEBLUR2 * color / contrast;
+		res = clamp(res, color - cldif, color + cldif);
 		
 		vec3 c00 = COMPAT_TEXTURE(Source, vTexCoord  -dx  -dy).rgb;
 		vec3 c20 = COMPAT_TEXTURE(Source, vTexCoord  +dx  -dy).rgb;		
