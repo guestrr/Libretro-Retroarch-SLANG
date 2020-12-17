@@ -50,7 +50,7 @@ layout(push_constant) uniform Push
 
 
 #pragma parameter SFX_CLR "ScaleFX Threshold" 0.50 0.01 1.00 0.01
-#pragma parameter SFX_SAA "ScaleFX Filter AA" 1.00 0.00 1.00 1.00
+#pragma parameter SFX_SAA "ScaleFX Filter AA" 0.00 0.00 1.00 1.00
 
 
 layout(set = 0, binding = 0, std140) uniform UBO

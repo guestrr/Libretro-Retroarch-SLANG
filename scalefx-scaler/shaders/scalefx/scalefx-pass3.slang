@@ -49,7 +49,7 @@ layout(push_constant) uniform Push
 } params;
 
 
-#pragma parameter SFX_SCN "ScaleFX Filter Corners" 1.0 0.0 1.0 1.0
+#pragma parameter SFX_SCN "ScaleFX Filter Corners" 0.0 0.0 1.0 1.0
 
 
 layout(set = 0, binding = 0, std140) uniform UBO

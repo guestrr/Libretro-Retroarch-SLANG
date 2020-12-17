@@ -38,16 +38,14 @@ filter_linear6 = true
 scale_type6 = source
 scale6 = 1.0
 
-shader7 = shaders/aa-shader-4.0-level2-pass2.slang
+shader7 = shaders/qscale.slang
 filter_linear7 = true
-scale_type_x7 = source
-scale_x7 = 2.0
-scale_type_y7 = source
-scale_y7 = 2.0 
+scale_type7 = source
+scale7 = 2.0
 
-shader8 = shaders/deblur2-sfx.slang
+shader8 = shaders/deblur2-sfx-q.slang
 filter_linear8 = true
 scale_type_x8 = viewport
-scale_x8 = 1.5
+scale_x8 = 1.0
 scale_type_y8 = viewport
-scale_y8 = 1.5
+scale_y8 = 1.0
