@@ -32,7 +32,7 @@ layout(push_constant) uniform Push
 } params;
 
 
-#pragma parameter DEBLURSFX "Deblur Strength" 3.0 2.0 7.0 1.0
+#pragma parameter DEBLURSFX "Deblur Strength" 3.0 2.0 5.0 1.0
 #define DEBLURSFX params.DEBLURSFX
 
 #pragma parameter SFXSHARP "ScaleFX Sharpness" 1.5 0.5 7.0 0.5
@@ -141,7 +141,7 @@ void main()
 			do
 			{
 				pixel  = COMPAT_TEXTURE(SfxPass, tex + x*dx + y*dy).rgb;
-				w = dot(res-pixel, res-pixel) + 0.00001;
+				w = dot(res-pixel, res-pixel) + 0.0005;
 				w=1.0/pow(w,SFXSHARP);
 				ref = ref + w*pixel;
 				wsum = wsum + w;
