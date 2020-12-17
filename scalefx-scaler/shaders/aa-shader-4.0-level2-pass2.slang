@@ -27,7 +27,7 @@ layout(push_constant) uniform Push
 	float AAOFFSET2;
 } params;
 
-#pragma parameter AAOFFSET2 "AA offset second pass" 0.5 0.25 2.0 0.05 
+#pragma parameter AAOFFSET2 "AA offset second pass" 0.4 0.25 2.0 0.05 
 
 layout(std140, set = 0, binding = 0) uniform UBO
 {
@@ -42,7 +42,7 @@ layout(location = 0) out vec2 vTexCoord;
 void main()
 {
    gl_Position = global.MVP * Position;
-   vTexCoord = TexCoord * 1.00001;
+   vTexCoord = TexCoord * 1.000001;
 }
 
 #pragma stage fragment
@@ -67,8 +67,8 @@ void main()
    vec3 c02 = texture(Source, DL).xyz;
    vec3 c22 = texture(Source, DR).xyz;
 
-   float m1=dot(abs(c00-c22),dt)+0.001;
-   float m2=dot(abs(c02-c20),dt)+0.001;
+   float m1=dot(abs(c00-c22),dt)+0.0000001;
+   float m2=dot(abs(c02-c20),dt)+0.0000001;
 
    FragColor = vec4((m1*(c02+c20)+m2*(c22+c00))/(2.0*(m1+m2)),1.0);
 }

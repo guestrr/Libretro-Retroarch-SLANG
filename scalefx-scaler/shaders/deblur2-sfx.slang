@@ -32,10 +32,10 @@ layout(push_constant) uniform Push
 } params;
 
 
-#pragma parameter DEBLURSFX "Deblur Strength" 3.0 2.0 5.0 1.0
+#pragma parameter DEBLURSFX "Deblur Strength" 5.0 1.0 7.0 1.0
 #define DEBLURSFX params.DEBLURSFX
 
-#pragma parameter SFXSHARP "ScaleFX Sharpness" 1.5 0.5 4.5 0.5
+#pragma parameter SFXSHARP "ScaleFX Sharpness" 1.5 0.5 5.0 0.5
 #define SFXSHARP params.SFXSHARP
 
 
@@ -52,7 +52,7 @@ layout(location = 0) out vec2 vTexCoord;
 void main()
 {
    gl_Position = global.MVP * Position;
-   vTexCoord = TexCoord;
+   vTexCoord = TexCoord * 1.00001;
 }
 
 #pragma stage fragment
@@ -97,25 +97,16 @@ void main()
 		} while (y <= LOOPSIZE);
 	
 		res = color;
-		vec3 contrast = cmax - cmin + 0.0001;
-		vec3 df1, df2, d1, d2, ratio;
-		df1 = color - cmin; d1 = df1;
-		df2 = cmax - color; d2 = df2;
+		vec3 contrast = cmax - cmin + 0.0000001;
+		vec3 df1, df2;
+		df1 = color - cmin;
+		df2 = cmax - color;
 
-		ratio = abs(df1-df2)/(df1+df2+0.0001);
-		df1 = df1/contrast; df1*=df1;
-		df2 = df2/contrast; df2*=df2;
+		df1 = df1/contrast; df1 = pow(df1, DEBLURSFX.xxx)+0.0000001;
+		df2 = df2/contrast; df2 = pow(df2, DEBLURSFX.xxx)+0.0000001;
 		
-		x = 1.0;
-		
-		while (x < DEBLURSFX)
-		{
-			res = mix(res, (cmax*df1 + cmin*df2)/(df1+df2), ratio);
-			df1*=df1; df2*=df2;
-			x = x + 1.0;
-		}
-		
-		
+		res = (cmax*df1 + cmin*df2)/(df1+df2);
+
 		dx = vec2(params.OriginalSize.z, 0.0)/3.0;
 		dy = vec2(0.0, params.OriginalSize.w)/3.0;
 		vec2 tex = floor(3.0*params.OriginalSize.xy * vTexCoord)*params.OriginalSize.zw/3.0 + 0.5/3.0*params.OriginalSize.zw;
@@ -128,26 +119,52 @@ void main()
 		
 		y = -LOOPSIZE;
 		
-		do
+		if (SFXSHARP < 4.75)
 		{
-			x = -LOOPSIZE;
-	
 			do
 			{
-				pixel  = COMPAT_TEXTURE(SfxPass, tex + x*dx + y*dy).rgb;
-				w = dot(res-pixel, res-pixel);
-				w=1.0/(pow(w,SFXSHARP) + 0.0000000001);
-				ref = ref + w*pixel;
-				wsum = wsum + w;
-				x = x + 1.0;
+				x = -LOOPSIZE;
+	
+				do
+				{
+					pixel  = COMPAT_TEXTURE(SfxPass, tex + x*dx + y*dy).rgb;
+					w = dot(res-pixel, res-pixel);
+					w=1.0/(pow(w,SFXSHARP) + 0.0000000001);
+					ref = ref + w*pixel;
+					wsum = wsum + w;
+					x = x + 1.0;
 			
-			} while (x <= LOOPSIZE);
+				} while (x <= LOOPSIZE);
 		
-			y = y + 1.0;
+				y = y + 1.0;
 		
-		} while (y <= LOOPSIZE);
+			} while (y <= LOOPSIZE);
 
-		color = ref/wsum; 
+			color = ref/wsum; 
+		} else
+		{
+			float nx = 3.0;
+			vec3 coln = res;
+			
+			do
+			{
+				x = -LOOPSIZE;
+	
+				do
+				{
+					pixel  = COMPAT_TEXTURE(SfxPass, tex + x*dx + y*dy).rgb;
+					w = dot(res-pixel, res-pixel);
+					if (w < nx) { nx = w; coln = pixel; }
+					x = x + 1.0;
+			
+				} while (x <= LOOPSIZE);
+		
+				y = y + 1.0;
+		
+			} while (y <= LOOPSIZE);
 
+		color = coln; 		
+		}
+		
 		FragColor = vec4(color, 1.0);
 }
