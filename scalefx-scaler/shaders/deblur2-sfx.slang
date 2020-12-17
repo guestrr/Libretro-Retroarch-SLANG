@@ -1,7 +1,5 @@
 #version 450
 
-#version 450
-
 /*
    Deblur - ScaleFX version
    
