@@ -32,7 +32,7 @@ layout(push_constant) uniform Push
 } params;
 
 
-#pragma parameter DEBLURSFX "Deblur Strength" 5.0 1.0 7.0 1.0
+#pragma parameter DEBLURSFX "Deblur Strength" 1.5 1.0 5.0 0.5
 #define DEBLURSFX params.DEBLURSFX
 
 #pragma parameter SFXSHARP "ScaleFX Sharpness" 1.5 0.5 5.0 0.5
