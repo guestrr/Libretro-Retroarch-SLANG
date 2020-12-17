@@ -27,7 +27,7 @@ layout(push_constant) uniform Push
 	float AAOFFSET2;
 } params;
 
-#pragma parameter AAOFFSET2 "AA offset second pass" 0.4 0.25 2.0 0.05 
+#pragma parameter AAOFFSET2 "AA offset second pass" 0.5 0.25 2.0 0.05 
 
 layout(std140, set = 0, binding = 0) uniform UBO
 {

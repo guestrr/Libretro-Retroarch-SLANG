@@ -68,17 +68,17 @@ void main()
 {
 		vec3 color = COMPAT_TEXTURE(Source, vTexCoord).rgb;
 
-		vec2 dx  = vec2(SourceSize.z, 0.0);	
-		vec2 dy  = vec2(0.0, SourceSize.w);
+		vec2 dx = vec2(params.OriginalSize.z, 0.0)/2.5;
+		vec2 dy = vec2(0.0, params.OriginalSize.w)/2.5;
 
 		vec3 pixel;
 		float x;
 		vec3  res;
 		vec3 cmax = 0.0.xxx;
 		vec3 cmin = 1.0.xxx;
-		float LOOPSIZE = 2.0;
+		float LOOPSIZE = 1.0;
 		
-		float y = -2.0;
+		float y = -1.0;
 
 		do
 		{
@@ -107,9 +107,10 @@ void main()
 		
 		res = (cmax*df1 + cmin*df2)/(df1+df2);
 
+		vec2 tex = floor(3.0*params.OriginalSize.xy * vTexCoord)*params.OriginalSize.zw/3.0 + 0.5/3.0*params.OriginalSize.zw;
+
 		dx = vec2(params.OriginalSize.z, 0.0)/3.0;
 		dy = vec2(0.0, params.OriginalSize.w)/3.0;
-		vec2 tex = floor(3.0*params.OriginalSize.xy * vTexCoord)*params.OriginalSize.zw/3.0 + 0.5/3.0*params.OriginalSize.zw;
 
 		float w;
 		float wsum = 0.0;
