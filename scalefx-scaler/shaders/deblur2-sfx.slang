@@ -1,5 +1,7 @@
 #version 450
 
+#version 450
+
 /*
    Deblur - ScaleFX version
    
@@ -35,7 +37,7 @@ layout(push_constant) uniform Push
 #pragma parameter DEBLURSFX "Deblur Strength" 3.0 2.0 5.0 1.0
 #define DEBLURSFX params.DEBLURSFX
 
-#pragma parameter SFXSHARP "ScaleFX Sharpness" 1.5 0.5 7.0 0.5
+#pragma parameter SFXSHARP "ScaleFX Sharpness" 1.5 0.5 4.5 0.5
 #define SFXSHARP params.SFXSHARP
 
 
@@ -97,12 +99,12 @@ void main()
 		} while (y <= LOOPSIZE);
 	
 		res = color;
-		vec3 contrast = cmax - cmin + 0.000001;
+		vec3 contrast = cmax - cmin + 0.0001;
 		vec3 df1, df2, d1, d2, ratio;
 		df1 = color - cmin; d1 = df1;
 		df2 = cmax - color; d2 = df2;
 
-		ratio = abs(df1-df2)/(df1+df2+0.0000001);
+		ratio = abs(df1-df2)/(df1+df2+0.0001);
 		df1 = df1/contrast; df1*=df1;
 		df2 = df2/contrast; df2*=df2;
 		
@@ -115,12 +117,6 @@ void main()
 			x = x + 1.0;
 		}
 		
-		float mx = 0.0;
-		float nx = 3.0;
-		vec3 nmin;
-		vec3 nmax;
-		nmax = 0.0.xxx;
-		nmin = 1.0.xxx;
 		
 		dx = vec2(params.OriginalSize.z, 0.0)/3.0;
 		dy = vec2(0.0, params.OriginalSize.w)/3.0;
@@ -141,8 +137,8 @@ void main()
 			do
 			{
 				pixel  = COMPAT_TEXTURE(SfxPass, tex + x*dx + y*dy).rgb;
-				w = dot(res-pixel, res-pixel) + 0.0005;
-				w=1.0/pow(w,SFXSHARP);
+				w = dot(res-pixel, res-pixel);
+				w=1.0/(pow(w,SFXSHARP) + 0.0000000001);
 				ref = ref + w*pixel;
 				wsum = wsum + w;
 				x = x + 1.0;
