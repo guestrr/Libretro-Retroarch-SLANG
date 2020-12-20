@@ -189,7 +189,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
 #pragma parameter inter "          Interlace Trigger Resolution :" 325.0 0.0 800.0 25.0
 #define inter         params.inter     // interlace resolution
 
-#pragma parameter interm "          Interlace Mode: OFF, Normal, FlickerFree, Linear" 2.0 0.0 3.0 1.0
+#pragma parameter interm "          Interlace Mode: OFF, Normal, FlickerFree, Linear" 2.0 0.0 4.0 1.0
 #define interm         global.interm     // interlace mode 
 
 #pragma parameter gamma_out "Gamma out" 2.4 1.0 5.0 0.05
@@ -259,8 +259,6 @@ vec3 Mask(vec2 pos, float mx)
 	pos = floor(pos/masksize);
 	vec3 mask = vec3(maskDark, maskDark, maskDark);
 	vec3 one = vec3(1.0);
-	float dark_compensate  = max( clamp( mix (mcut, maskstr, mx),0.0, 1.0) - 0.5, 0.0) + 1.0;
-	float dark_compensate6 = max( clamp( mix (mcut, maskstr, mx),0.0, 1.0) - 0.5, 0.0) + 1.0;
 	float mc = 1.0 - max(maskstr, 0.0);	
 	
 	// No mask
@@ -340,7 +338,7 @@ vec3 Mask(vec2 pos, float mx)
 			mask.b  = 1.0;
 		}
 		else     mask.g = 1.0;
-		mask = clamp(mix( mix(one, mask, mcut), mix(one, mask, maskstr), mx), 0.0, 1.0) * dark_compensate;
+		mask = clamp(mix( mix(one, mask, mcut), mix(one, mask, maskstr), mx), 0.0, 1.0);
 	}    
 
 	// Trinitron mask 6
@@ -351,13 +349,13 @@ vec3 Mask(vec2 pos, float mx)
 		if      (pos.x < 0.333) mask.r = 1.0;
 		else if (pos.x < 0.666) mask.g = 1.0;
 		else                    mask.b = 1.0;
-		mask = clamp(mix( mix(one, mask, mcut), mix(one, mask, maskstr), mx), 0.0, 1.0) * dark_compensate6;
+		mask = clamp(mix( mix(one, mask, mcut), mix(one, mask, maskstr), mx), 0.0, 1.0);
 	}
 	
 	// BW Trinitron mask 7
 	else if (shadowMask == 7.0)
 	{
-		float maskTmp = clamp(mix( mix(1.0, 0.0, mcut), mix(1.0, 0.0, maskstr), mx), 0.0, 1.0) * dark_compensate;
+		float maskTmp = clamp(mix( mix(1.0, 0.0, mcut), mix(1.0, 0.0, maskstr), mx), 0.0, 1.0);
 		mask = vec3(maskTmp);
 		pos.x = fract(pos.x/2.0);
 		if  (pos.x < 0.5) mask = vec3(1.0);
@@ -718,26 +716,33 @@ void main()
 	
 	if (interb1) 
 	{
-		if (interm < 2.5)
+		float line_no  = floor(mod(mix(  OGL2Pos.y,  OGL2Pos.x, TATE),2.0));		
+		float frame_no = floor(mod(float(global.FrameCount),2.0));
+		float ii = (interm == 2.0) ? 0.5 : abs(line_no-frame_no);
+
+		color0 = sqrt(color0);
+		color1 = sqrt(color1);
+		color2 = sqrt(color2);			
+
+		if (interm == 1.0 || interm == 2.0)
 		{
-			float line_no  = floor(mod(mix(  OGL2Pos.y,  OGL2Pos.x, TATE),2.0));		
-			float frame_no = floor(mod(float(global.FrameCount),2.0));
-			float ii = (interm > 1.5) ? 0.5 : abs(line_no-frame_no);
-			
-			color0 = sqrt(color0);
-			color1 = sqrt(color1);
-			color2 = sqrt(color2);
-			
 			vec3 icolor1 = mix(color1, color0, ii);
 			vec3 icolor2 = mix(color1, color2, ii);
 			
 			color = mix(icolor1, icolor2, f);
-			color = color * color;
-			
-			mcolor = vec3(max(max(color.r,color.g), color.b));			
 		} 
 		else color = mix(color1, color2, f);
-
+		
+		if (interm == 4.0)
+		{
+			float r = color.r + color.g + color.b + 0.0001;
+			color = mix(color1, color2, ii);
+			float t = color.r + color.g + color.b + 0.0001;
+			if (r < t) color = color * mix(r,t,0.5) / t;
+		}
+		
+		color = color * color;		
+		mcolor = vec3(max(max(color.r,color.g), color.b));		
 	}
 
 	float mx = max(max(mcolor.r,mcolor.g),mcolor.b);
