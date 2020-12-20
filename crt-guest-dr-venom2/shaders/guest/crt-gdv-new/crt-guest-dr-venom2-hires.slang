@@ -716,11 +716,17 @@ void main()
 			float line_no  = floor(mod(mix(  OGL2Pos.y,  OGL2Pos.x, TATE),2.0));		
 			float frame_no = floor(mod(float(global.FrameCount),2.0));
 			float ii = (interm > 1.5) ? 0.5 : abs(line_no-frame_no);
+
+			color0 = sqrt(color0);
+			color1 = sqrt(color1);
+			color2 = sqrt(color2);
 			
 			vec3 icolor1 = mix(color1, color0, ii);
 			vec3 icolor2 = mix(color1, color2, ii);
 			
 			color = mix(icolor1, icolor2, f);
+			color = color * color;
+			
 			mcolor = vec3(max(max(color.r,color.g), color.b));			
 		} 
 		else color = mix(color1, color2, f);
@@ -748,8 +754,8 @@ void main()
 	cmask = min(cmask*smask, 1.0);
 
 	float colmx = pow( max( max(ctmp.r, ctmp.g), ctmp.b), 1.40/gamma_out);
-	float bb = (interb1) ? sqrt(brightboost) : brightboost;
-	bb = mix(bb, brightboost1, colmx);
+	float bb = mix(brightboost, brightboost1, colmx);
+	bb = (interb1) ? sqrt(bb) : bb;	
 	color*=bb;
 
 	vec3  Glow = COMPAT_TEXTURE(GlowPass, pos   ).rgb;
