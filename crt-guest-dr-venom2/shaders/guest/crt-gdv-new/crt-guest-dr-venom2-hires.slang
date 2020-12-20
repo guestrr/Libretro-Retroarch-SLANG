@@ -244,11 +244,12 @@ float sw2(float x, float color, float scanline)
 
 // Shadow mask (1-4 from PD CRT Lottes shader).
 
-vec3 Mask(vec2 pos, float mx, vec3 c)
+vec3 Mask(vec2 pos, float mx)
 {
 	pos = floor(pos/masksize);
 	vec3 mask = vec3(maskDark, maskDark, maskDark);
 	vec3 one = vec3(1.0);
+	float dark_compensate  = mix(max( clamp( mix (mcut, maskstr, mx),0.0, 1.0) - 0.5, 0.0) + 1.0, 1.0, mx);
 	float mc = 1.0 - max(maskstr, 0.0);	
 	
 	// No mask
@@ -328,7 +329,7 @@ vec3 Mask(vec2 pos, float mx, vec3 c)
 			mask.b  = 1.0;
 		}
 		else     mask.g = 1.0;
-		mask = clamp(mix( mix(one, mask, mcut), mix(one, mask, maskstr), c), 0.0, 1.0);
+		mask = clamp(mix( mix(one, mask, mcut), mix(one, mask, maskstr), mx), 0.0, 1.0) * dark_compensate;
 	}    
 
 	// Trinitron mask 6
@@ -339,18 +340,18 @@ vec3 Mask(vec2 pos, float mx, vec3 c)
 		if      (pos.x < 0.333) mask.r = 1.0;
 		else if (pos.x < 0.666) mask.g = 1.0;
 		else                    mask.b = 1.0;
-		mask = clamp(mix( mix(one, mask, mcut), mix(one, mask, maskstr), c), 0.0, 1.0);
+		mask = clamp(mix( mix(one, mask, mcut), mix(one, mask, maskstr), mx), 0.0, 1.0) * dark_compensate;
 	}
 	
 	// BW Trinitron mask 7
 	else if (shadowMask == 7.0)
 	{
-		float maskTmp = clamp(mix( mix(1.0, 0.0, mcut), mix(1.0, 0.0, maskstr), mx), 0.0, 1.0);
+		float maskTmp = clamp(mix( mix(1.0, 0.0, mcut), mix(1.0, 0.0, maskstr), mx), 0.0, 1.0) * dark_compensate;
 		mask = vec3(maskTmp);
 		pos.x = fract(pos.x/2.0);
 		if  (pos.x < 0.5) mask = vec3(1.0);
 	}    
-	
+
 	// 4k mask
 	else 
 	{
@@ -361,9 +362,9 @@ vec3 Mask(vec2 pos, float mx, vec3 c)
 		else if (pos.x < 0.7)  mask.gb = 1.0.xx;	
 		else                   mask.b  = 1.0;	
 	}     
- 	
+ 
 	return mask;
-} 
+}
 
 float SlotMask(vec2 pos, float m)
 {
@@ -713,10 +714,6 @@ void main()
 		float frame_no = floor(mod(float(global.FrameCount),2.0));
 		float ii = (interm == 2.0) ? 0.5 : abs(line_no-frame_no);
 
-		color0 = sqrt(color0);
-		color1 = sqrt(color1);
-		color2 = sqrt(color2);			
-
 		if (interm == 1.0 || interm == 2.0)
 		{
 			vec3 icolor1 = mix(color1, color0, ii);
@@ -734,7 +731,6 @@ void main()
 			if (r < t) color = color * mix(r,t,0.5) / t;
 		}
 		
-		color = color * color;		
 		mcolor = vec3(max(max(color.r,color.g), color.b));		
 	}
 
@@ -748,7 +744,7 @@ void main()
 	
 	float smask = (notate) ? SlotMask(gl_FragCoord.xy * 1.000001, mx) : SlotMask(gl_FragCoord.yx * 1.000001, mx);	
 	
-	cmask*= (notate) ? Mask(gl_FragCoord.xy * 1.000001, mx, mcolor) : Mask(gl_FragCoord.yx * 1.000001, mx, mcolor);
+	cmask*= (notate) ? Mask(gl_FragCoord.xy * 1.000001, mx) : Mask(gl_FragCoord.yx * 1.000001, mx);
 	
 	color = pow(color, vec3(mask_gamma/gamma_in));
 	color = color*cmask;
