@@ -50,7 +50,7 @@ scale5 = 1.0
 mipmap_input5 = true
 alias5 = AvgLumPass
 
-shader6 = shaders/guest/crt-gdv-new/linearize.slang
+shader6 = shaders/guest/crt-gdv-new/linearize-ntsc.slang
 filter_linear6 = true
 scale_type6 = source
 scale6 = 1.0

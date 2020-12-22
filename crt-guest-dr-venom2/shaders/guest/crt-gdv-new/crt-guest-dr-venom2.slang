@@ -27,7 +27,7 @@ layout(push_constant) uniform Push
 {
 	float TATE, IOS, OS, BLOOM, brightboost, brightboost1, gsl, scanline1, scanline2, beam_min, beam_max, beam_size,
       h_sharp, s_sharp, csize, bsize, warpX, warpY, glow, shadowMask, masksize, vertmask,
-      slotmask, slotwidth, double_slot, mcut, maskDark, maskLight, maskstr, gamma_out, spike, inter;
+      slotmask, slotwidth, double_slot, mcut, maskDark, maskLight, maskstr, gamma_out, spike;
 } params;
 
 layout(std140, set = 0, binding = 0) uniform UBO
@@ -38,7 +38,6 @@ layout(std140, set = 0, binding = 0) uniform UBO
 	vec4 OutputSize;
 	uint FrameCount;
 	float bloom;	
-	float interm;
 	float scans;
 	float scansub;
 	float slotms;
@@ -184,14 +183,6 @@ layout(std140, set = 0, binding = 0) uniform UBO
 #pragma parameter mclip "          Keep Mask effect with clipping" 0.5 0.0 1.0 0.05
 #define mclip  global.mclip     // Slot Mask Size
 
-#pragma parameter bogus_interlacing "[ INTERLACING OPTIONS ]: " 0.0 0.0 1.0 1.0
-
-#pragma parameter inter "          Interlace Trigger Resolution :" 325.0 0.0 800.0 25.0
-#define inter         params.inter     // interlace resolution
-
-#pragma parameter interm "          Interlace Mode: OFF, Normal, FlickerFree, Linear" 2.0 0.0 4.0 1.0
-#define interm         global.interm     // interlace mode 
-
 #pragma parameter gamma_out "Gamma out" 2.4 1.0 5.0 0.05
 #define gamma_out    params.gamma_out     // output gamma
 
@@ -211,7 +202,7 @@ layout(location = 0) out vec2 vTexCoord;
 void main()
 {
    gl_Position = global.MVP * Position;
-   vTexCoord = TexCoord * 1.00001;
+   vTexCoord = TexCoord * 1.000001;
 }
 
 #pragma stage fragment
@@ -438,7 +429,9 @@ void main()
 {
 	
 	float lum = COMPAT_TEXTURE(AvgLumPass, vec2(0.1,0.1)).a;
-	float gamma_in = 1.0/COMPAT_TEXTURE(LinearizePass, vec2(0.5,0.5)).a;
+	float gamma_in = 1.0/COMPAT_TEXTURE(LinearizePass, vec2(0.25,0.25)).a;
+	float inter = COMPAT_TEXTURE(LinearizePass, vec2(0.75,0.25)).a;
+	bool interb  = (inter < 0.75);
 	
 	// Calculating texel coordinates
    
@@ -457,14 +450,10 @@ void main()
 	vec2 pos  = Warp(texcoord);
 	vec2 pos0 = Warp(TEX0.xy);
    
-	bool interb  = (interm > 0.5 && interm < 2.5 && inter <= mix(SourceSize.y, SourceSize.x, TATE));
-	bool interb1 = (interm > 0.5 && inter <= mix(SourceSize.y, SourceSize.x, TATE));	
-	bool notate  = (TATE < 0.5);
-	bool smarte  = (smart_ei > 0.0 && !interb && notate); // smart edge interpolation on / off
+	bool notate  = (TATE < 0.5); 
+	bool smarte  = (smart_ei > 0.0 && notate); // smart edge interpolation on / off
 
 	vec2 coffset = vec2(0.5, 0.5);
-	
-	if (interb) coffset = ((notate) ? vec2(0.5,0.0) : vec2(0.0, 0.5));
 	
 	vec2 ps = SourceSize.zw;
 	vec2 OGL2Pos = pos * SourceSize.xy - coffset;
@@ -490,7 +479,9 @@ void main()
 	}
 	float  f = (notate) ? fp.y : fp.x;
 	
-	vec2 pC4 = floor(OGL2Pos) * ps + 0.5*ps;
+	vec2 pC4 = floor(OGL2Pos) * ps + 0.5*ps; 
+	
+	if (interb) pC4.y = pos.y - inter * SourceSize.w;
 	
 	float zero = exp2(-h_sharp);
 	float sharp1 = s_sharp * zero;
@@ -586,6 +577,11 @@ void main()
 	scolor1 = (sl2*swl2 + sl1*rwl1 + sr1*rwr1 + sr2*swr2)*wts;
 	scolor1 = pow(scolor1, gtmp);	vec3 mcolor1 = scolor1;
 	scolor1 = min(mix(color1, scolor1, spike),1.0);
+
+	vec3 scolor2, mcolor2;
+	
+	if (!interb)
+	{
 	
 	pC4+=offy;
 	
@@ -627,22 +623,6 @@ void main()
 	scolor2 = pow(scolor2, gtmp);	vec3 mcolor2 = scolor2;
 	scolor2 = min(mix(color2, scolor2, spike),1.0);
 	
-	color0 = color1;
-
-	if (interb)
-	{
-		pC4-=2.0*offy;
-		l3 = COMPAT_TEXTURE(LinearizePass, pC4 -off2).rgb;
-		l2 = COMPAT_TEXTURE(LinearizePass, pC4 -offx).rgb;
-		l1 = COMPAT_TEXTURE(LinearizePass, pC4      ).rgb;
-		r1 = COMPAT_TEXTURE(LinearizePass, pC4 +offx).rgb;
-		r2 = COMPAT_TEXTURE(LinearizePass, pC4 +off2).rgb;
-		r3 = COMPAT_TEXTURE(LinearizePass, pC4 +offx+off2).rgb;	
-
-		color0 = (l3*twl3 + l2*twl2 + l1*twl1 + r1*twr1 + r2*twr2 + r3*twr3)/(twl3+twl2+twl1+twr1+twr2+twr3);
-		colmin = min(min(l1,r1), min(l2,r2));
-		colmax = max(max(l1,r1), max(l2,r2));
-		if (sharp) color0 = clamp(color0, colmin, colmax);
 	}
 	
 	// calculating scanlines
@@ -715,29 +695,9 @@ void main()
 	color = min(color, 1.0);
 	float w3 = wf1+wf2;
 	
-	if (interb1) 
+	if (interb) 
 	{
-		float line_no  = floor(mod(mix(  OGL2Pos.y,  OGL2Pos.x, TATE),2.0));		
-		float frame_no = floor(mod(float(global.FrameCount),2.0));
-		float ii = (interm == 2.0) ? 0.5 : abs(line_no-frame_no);
-
-		if (interm == 1.0 || interm == 2.0)
-		{
-			vec3 icolor1 = mix(color1, color0, ii);
-			vec3 icolor2 = mix(color1, color2, ii);
-			
-			color = mix(icolor1, icolor2, f);
-		} 
-		else color = mix(color1, color2, f);
-		
-		if (interm == 4.0)
-		{
-			float r = color.r + color.g + color.b + 0.0001;
-			color = mix(color1, color2, ii);
-			float t = color.r + color.g + color.b + 0.0001;
-			if (r < t) color = color * mix(r,t,0.5) / t;
-		}
-		
+		color = color1;
 		mcolor = vec3(max(max(color.r,color.g), color.b));		
 	}
 
@@ -761,9 +721,10 @@ void main()
 
 	cmask = min(cmask*smask, 1.0);
 
+	if (interb) ctmp = color;
 	float colmx = pow( max( max(ctmp.r, ctmp.g), ctmp.b), 1.40/gamma_out);
 	float bb = mix(brightboost, brightboost1, colmx);
-	bb = (interb1) ? sqrt(bb) : bb;	
+	bb = (interb) ? sqrt(bb) : bb;	
 	color*=bb;
 
 	vec3  Glow = COMPAT_TEXTURE(GlowPass, pos   ).rgb;
@@ -772,7 +733,7 @@ void main()
 	color = color + bloom*Bloom;
 	
 	color = min(color, mix(one, cmask, mclip));
-	if (interm < 0.5 || inter > mix(SourceSize.y, SourceSize.x, TATE)) color = declip(color, pow(w3,0.6));
+	if (!interb) color = declip(color, pow(w3,0.6));
 
 	Glow = mix(Glow, 0.25*color, 0.7*colmx);
 	color = color + 0.5*glow*Glow;
