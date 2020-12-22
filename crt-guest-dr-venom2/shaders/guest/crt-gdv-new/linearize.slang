@@ -67,7 +67,7 @@ void main()
 		float ii = (interm == 3.0) ? 0.5 : abs(line_no-frame_no);	
 
 		if (interm == 1.0 || interm == 3.0) { c = mix(c1, c2, ii); intera = 0.5; }
-		if (interm == 2.0) { c = mix(c1, c2, ii);  c = normalize(c1 + 1e-5) * length(min(c,c1)); intera = 0.0; }
+		if (interm == 2.0) { c = mix(c1, c2, ii);  c = normalize(c + 1e-5) * length(min(c,c1)); intera = 0.0; }
 	}
 	
 	float gamma_in = 1.0/GAMMA_INPUT;
