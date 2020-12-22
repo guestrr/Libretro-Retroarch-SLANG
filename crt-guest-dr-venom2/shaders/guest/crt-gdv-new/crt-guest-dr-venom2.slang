@@ -618,9 +618,9 @@ void main()
 	
 	if (sharp) color2 = clamp(color2, colmin, colmax);
 	
-	vec3 scolor2 = color2;
+	scolor2 = color2;
 	scolor2 = (sl2*swl2 + sl1*rwl1 + sr1*rwr1 + sr2*swr2)*wts;
-	scolor2 = pow(scolor2, gtmp);	vec3 mcolor2 = scolor2;
+	scolor2 = pow(scolor2, gtmp);	mcolor2 = scolor2;
 	scolor2 = min(mix(color2, scolor2, spike),1.0);
 	
 	}
