@@ -95,7 +95,13 @@ void main()
 		float ii = (interm == 3.0) ? 0.5 : abs(line_no-frame_no);	
 
 		if (interm == 1.0 || interm == 3.0) { res = mix(res1, res2, ii); intera = 0.5; }
-		if (interm == 2.0) { res = mix(res1, res2, ii); res = normalize(res + 1e-5) * length(min(res,res1)); intera = 0.0; }
+		if (interm == 2.0) 
+		{
+			res = res2;
+			if (frame_no == 0.0 && line_no == 0.0) res = 0.5*res1;
+			if (frame_no == 1.0 && line_no == 1.0) res = 0.5*res1;
+			intera = 0.5;
+		}
 	}
 	
 	float gamma_in = 1.0/GAMMA_INPUT;
