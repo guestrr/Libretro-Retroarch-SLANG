@@ -1,0 +1,83 @@
+shaders = 12
+
+shader0 = ../stock.slang
+alias0 = refpass
+filter_linear0 = "false"
+
+shader1 = shaders/scalefx/scalefx-pass0.slang
+filter_linear1 = false
+scale_type1 = source
+scale1 = 1.0
+float_framebuffer1 = true
+alias1 = scalefx_pass0
+
+shader2 = shaders/scalefx/scalefx-pass1.slang
+filter_linear2 = false
+scale_type2 = source
+scale2 = 1.0
+float_framebuffer2 = true
+
+shader3 = shaders/scalefx/scalefx-pass2.slang
+filter_linear3 = false
+scale_type3 = source
+scale3 = 1.0
+
+shader4 = shaders/scalefx/scalefx-pass3.slang
+filter_linear4 = false
+scale_type4 = source
+scale4 = 1.0
+
+shader5 = shaders/scalefx/scalefx-pass4.slang
+filter_linear5 = false
+scale_type5 = source
+scale5 = 3.0
+
+shader6 = shaders/scalefx/reverse-aa-post3x-pass0.slang
+filter_linear6 = true
+scale_type6 = source
+scale6 = 1.0
+
+shader7 = shaders/scalefx/reverse-aa-post3x-pass1.slang
+filter_linear7 = true
+scale_type7 = source
+scale7 = 1.0
+alias7 = "SfxPass"
+
+shader8 = shaders/fxaa/fxaa.slang
+filter_linear8 = true
+scale_type8 = source
+scale8 = 1.0
+
+shader9 = shaders/g-sharp_resampler_horizontal_jpass.slang
+filter_linear9 = true
+scale_type_x9 = source
+scale_x9 = 2.0
+scale_type_y9 = source
+scale_y9 = 1.0 
+
+shader10 = shaders/g-sharp_resampler_vertical_jpass.slang
+filter_linear10 = true
+scale_type_x10 = source
+scale_x10 = 1.0
+scale_type_y10 = source
+scale_y10 = 2.0 
+
+shader11 = shaders/deblur2-scalefx.slang
+filter_linear11 = true
+scale_type_x11 = viewport
+scale_x11 = 1.0
+scale_type_y11 = viewport
+scale_y11 = 1.0 
+
+
+parameters = "SFX_CLR;SFX_SAA;SFX_SCN;bogus-line0;JPSHARP0;SIGMA_JP;JPSHAR;JPAR;SFXSHARP;SFXCRISP"
+SFX_CLR = "0.500000"
+SFX_SAA = "1.000000"
+SFX_SCN = "0.000000"
+bogus-line0 = "0.000000"
+JPSHARP0 = "1.800000"
+SIGMA_JP = "1.250000"
+JPSHAR = "0.500000"
+JPAR = "0.500000"
+SFXSHARP = "0.700000"
+SFXCRISP = "2.500000" 
