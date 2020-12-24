@@ -11,6 +11,8 @@ layout(push_constant) uniform Push
 	float GAMMA_INPUT;
 	float inter;
 	float interm;
+	float inters;
+	float iscan;
 } params;
 
 
@@ -28,8 +30,14 @@ layout(std140, set = 0, binding = 0) uniform UBO
 #pragma parameter inter "          Interlace Trigger Resolution :" 350.0 0.0 800.0 25.0
 #define inter         params.inter     // interlace resolution
 
-#pragma parameter interm "          Interlace Mode: OFF, Normal_1, Normal_2..." 1.0 0.0 4.0 1.0
+#pragma parameter interm "          Interlace Mode: OFF, Normal, Interpolation" 1.0 0.0 2.0 1.0
 #define interm         params.interm     // interlace mode 
+
+#pragma parameter inters "          Interlacing Effect Smoothness" 0.0 0.0 0.5 0.05 // // Joint parameter with main pass, values must match
+#define inters  params.inters     // interlacing effect smoothing
+
+#pragma parameter iscan "          Interlacing Scanline Effect" 0.40 0.0 1.0 0.05
+#define iscan  params.iscan     // interlacing effect scanlining
 
 
 #pragma stage vertex
@@ -51,10 +59,19 @@ layout(set = 0, binding = 2) uniform sampler2D PrePass;
 #define COMPAT_TEXTURE(c,d) texture(c,d)
 #define SourceSize  params.SourceSize
 
+
+vec3 level (vec3 tar, vec3 ref)
+{
+	float t = max(max(tar.r,tar.g),tar.b) + 0.00001;
+	float r = max(max(ref.r,ref.g),ref.b);
+	return tar * r / t;
+}
+
+
 void main()
 {
 	vec3  c1 = COMPAT_TEXTURE(PrePass, vTexCoord).rgb;
-	vec3  c2 = COMPAT_TEXTURE(PrePass, vTexCoord + vec2(0.0, 1.0/params.OriginalSize.y)).rgb;
+	vec3  c2 = COMPAT_TEXTURE(PrePass, vTexCoord + vec2(0.0, 1.0/params.OriginalSize.y)).rgb;	
 	vec3  c  = c1;
 
 	float intera = 1.0;
@@ -62,18 +79,10 @@ void main()
 	if (inter < params.OriginalSize.y && interm > 0.5)
 	{
 		intera = 0.0;
-		float line_no  = floor(mod(params.OriginalSize.y*vTexCoord.y, 2.0));		
+		float line_no  = floor(mod(params.OriginalSize.y*vTexCoord.y, 2.0));
 		float frame_no = floor(mod(float(params.FrameCount),2.0));
-		float ii = (interm == 3.0) ? 0.5 : abs(line_no-frame_no);	
-
-		if (interm == 1.0 || interm == 3.0) { c = mix(c1, c2, ii); intera = 0.5; }
-		if (interm == 2.0) 
-		{
-			c = c2;
-			if (frame_no == 0.0 && line_no == 0.0) c = 0.5*c1;
-			if (frame_no == 1.0 && line_no == 1.0) c = 0.5*c1;
-			intera = 0.5;
-		}
+		float ii = abs(line_no-frame_no);
+		if (interm == 1.0) { c = max(c1*ii, (1.0-iscan)*min(c1,c2)); c = level(mix(c2, c1, ii), c); }
 	}
 	
 	float gamma_in = 1.0/GAMMA_INPUT;

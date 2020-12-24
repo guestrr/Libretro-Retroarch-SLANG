@@ -14,6 +14,8 @@ layout(push_constant) uniform Push
 	float inter;
 	float interm;
 	float intres;
+	float inters;
+	float iscan;
 } params;
 
 #pragma parameter GAMMA_INPUT "Gamma Input" 2.4 1.0 5.0 0.05
@@ -32,10 +34,16 @@ layout(push_constant) uniform Push
 #pragma parameter inter "          Interlace Trigger Resolution :" 350.0 0.0 800.0 25.0
 #define inter         params.inter     // interlace resolution
 
-#pragma parameter interm "          Interlace Mode: OFF, Normal_1, Normal_2..." 1.0 0.0 4.0 1.0
-#define interm         params.interm     // interlace mode 
+#pragma parameter interm "          Interlace Mode: OFF, Normal, Interpolation" 1.0 0.0 2.0 1.0
+#define interm         params.interm     // interlace mode
 
-#pragma parameter intres "          Internal Resolution: 1.0:240p, 1.5...y-dowsample" 0.0 0.0 4.0 0.5
+#pragma parameter inters "          Interlacing Effect Smoothness" 0.0 0.0 0.5 0.05 // Joint parameter with main pass, values must match
+#define inters  params.inters     // interlacing effect smoothing
+
+#pragma parameter iscan "          Interlacing Scanline Effect" 0.40 0.0 1.0 0.05
+#define iscan  params.iscan     // interlacing effect scanlining
+
+#pragma parameter intres "          Internal Resolution: 1.0:240p, 1.5...y-dowsample" 0.0 0.0 4.0 0.5 // Joint parameter with main pass, values must match
 #define intres         params.intres     // interlace resolution
 
 #define SourceSize  params.SourceSize
@@ -62,6 +70,15 @@ layout(location = 0) out vec4 FragColor;
 layout(set = 0, binding = 2) uniform sampler2D PrePass;
 
 #define COMPAT_TEXTURE(c,d) texture(c,d)
+
+
+vec3 level (vec3 tar, vec3 ref)
+{
+	float t = max(max(tar.r,tar.g),tar.b) + 0.00001;
+	float r = max(max(ref.r,ref.g),ref.b);
+	return tar * r / t;
+}
+
 
 void main()
 {
@@ -90,18 +107,10 @@ void main()
 	if (inter < SourceSize.y/yres_div && interm > 0.5 && intres != 1.0)
 	{
 		intera = 0.0;
-		float line_no  = floor(mod(params.OriginalSize.y*vTexCoord.y, 2.0));		
+		float line_no  = floor(mod(params.OriginalSize.y*vTexCoord.y, 2.0));
 		float frame_no = floor(mod(float(params.FrameCount),2.0));
-		float ii = (interm == 3.0) ? 0.5 : abs(line_no-frame_no);	
-
-		if (interm == 1.0 || interm == 3.0) { res = mix(res1, res2, ii); intera = 0.5; }
-		if (interm == 2.0) 
-		{
-			res = res2;
-			if (frame_no == 0.0 && line_no == 0.0) res = 0.5*res1;
-			if (frame_no == 1.0 && line_no == 1.0) res = 0.5*res1;
-			intera = 0.5;
-		}
+		float ii = abs(line_no-frame_no);
+		if (interm == 1.0) { res = max(res1*ii, (1.0-iscan)*min(res1,res2)); res = level(mix(res2, res1, ii), res); }
 	}
 	
 	float gamma_in = 1.0/GAMMA_INPUT;

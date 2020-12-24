@@ -27,7 +27,7 @@ layout(push_constant) uniform Push
 {
 	float TATE, IOS, OS, BLOOM, brightboost, brightboost1, gsl, scanline1, scanline2, beam_min, beam_max, beam_size,
       h_sharp, s_sharp, csize, bsize, warpX, warpY, glow, shadowMask, masksize, vertmask,
-      slotmask, slotwidth, double_slot, mcut, maskDark, maskLight, maskstr, gamma_out, spike, intres;
+      slotmask, slotwidth, double_slot, mcut, maskDark, maskLight, maskstr, spike, intres, inters;
 } params;
 
 layout(std140, set = 0, binding = 0) uniform UBO
@@ -44,6 +44,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
 	float slotms;
 	float gamma_c;
 	float mask_gamma;
+	float gamma_out;
 } global;
 
 #pragma parameter bogus_brightness "[ BRIGHTNESS SETTINGS ]:" 0.0 0.0 1.0 1.0
@@ -108,7 +109,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
 
 #pragma parameter bogus_screen "[ SCREEN OPTIONS ]: " 0.0 0.0 1.0 1.0
 
-#pragma parameter intres "          Internal Resolution: 1.0:240p, 1.5...y-dowsample" 0.0 0.0 4.0 0.5
+#pragma parameter intres "          Internal Resolution: 1.0:240p, 1.5...y-dowsample" 0.0 0.0 4.0 0.5 // Joint parameter with linearize_ntsc pass, values must match
 #define intres         params.intres     // interlace resolution
 
 #pragma parameter TATE "          TATE Mode" 0.0 0.0 1.0 1.0
@@ -174,7 +175,10 @@ layout(std140, set = 0, binding = 0) uniform UBO
 #define mclip  global.mclip     // Slot Mask Size
 
 #pragma parameter gamma_out "Gamma out" 2.4 1.0 5.0 0.05
-#define gamma_out    params.gamma_out     // output gamma
+#define gamma_out    global.gamma_out     // output gamma
+
+#pragma parameter inters "          Interlacing Effect Smoothness" 0.0 0.0 0.5 0.05 // Joint parameter with linearize pass, values must match
+#define inters  params.inters     // interlacing effect smoothing
 
 
 #define COMPAT_TEXTURE(c,d) texture(c,d)
@@ -420,7 +424,7 @@ void main()
 	float lum = COMPAT_TEXTURE(AvgLumPass, vec2(0.1,0.1)).a;
 	float gamma_in = 1.0/COMPAT_TEXTURE(LinearizePass, vec2(0.25,0.25)).a;
 	float inter = COMPAT_TEXTURE(LinearizePass, vec2(0.75,0.25)).a;
-	bool interb  = (inter < 0.75);
+	bool interb  = (inter < 0.5);
 	
 	bool notate  = (TATE < 0.5);
 	
@@ -476,7 +480,7 @@ void main()
 	
 	vec2 pC4 = floor(OGL2Pos) * ps + 0.5*ps; 
 	
-	if (interb) pC4.y = pos.y - inter * SourceSize.w;
+	if (interb)  pC4.y = pos.y - inters * SourceSize.w;
 	
 	float h_sharp1 = pow(h_sharp, 1.4);
 	
@@ -561,9 +565,7 @@ void main()
 
 	vec3 color2, scolor2, mcolor2;
 
-	if (!interb)
-	{
-	
+	if (interb) pC4.y = pC4.y + 2.0 * inters * SourceSize.w; else
 	pC4+=offy;
 	
 	l5 = COMPAT_TEXTURE(LinearizePass, pC4 -2.0*off2).xyz;
@@ -600,12 +602,14 @@ void main()
 	scolor2 = (sl3*swl3 + sl2*wl2 + sl1*wl1 + sr1*wr1 + sr2*wr2 + sr3*swr3)*wt;
 	scolor2 = pow(scolor2, gtmp);	mcolor2 = scolor2;
 	scolor2 = min(mix(color2, scolor2, spike),1.0);
-	}
 
 	// calculating scanlines
-	
+
+	vec3 ctmp; vec3 mcolor; float w3; vec3 color;
 	vec3 one = vec3(1.0);
-	
+
+if (!interb)
+{	
 	float shape1 = mix(scanline1, scanline2, f);
 	float shape2 = mix(scanline1, scanline2, 1.0-f);	
 	
@@ -614,15 +618,12 @@ void main()
 
 	vec3 color00 = color1*wt1 + color2*wt2;
 	vec3 scolor0 = scolor1*wt1 + scolor2*wt2;
-	vec3 mcolor  = (mcolor1*wt1 + mcolor2*wt2)/(wt1+wt2);
+	mcolor  = (mcolor1*wt1 + mcolor2*wt2)/(wt1+wt2);
 	
-	vec3 ctmp = color00/(wt1+wt2);
+	ctmp = color00/(wt1+wt2);
 	vec3 sctmp = scolor0/(wt1+wt2);
 	
-	mcolor = clamp(mix(ctmp, mcolor, 1.25),0.0,1.0);
-	mcolor = pow(mcolor, vec3(1.40/gamma_out));
-	
-	float wf1, wf2 = 0.0;
+	float wf1, wf2;
 	
 	vec3 cref1 = mix(sctmp, scolor1, beam_size); float creff1 = max(max(cref1.r,cref1.g),cref1.b);
 	vec3 cref2 = mix(sctmp, scolor2, beam_size); float creff2 = max(max(cref2.r,cref2.g),cref2.b);
@@ -671,13 +672,14 @@ void main()
 		cd2 = mix(one, vec3(v_low, v_high2, v_low), ds2);
 	}
 	
-	vec3 color = gc(color1)*w1*cd1 + gc(color2)*w2*cd2;
+	color = gc(color1)*w1*cd1 + gc(color2)*w2*cd2;
 	color = min(color, 1.0);
-	float w3 = wf1+wf2;
+	w3 = wf1+wf2;
+}
 	
 	if (interb) 
 	{
-		color = color1;
+		color = gc(0.5*(color1+color2));
 		mcolor = vec3(max(max(color.r,color.g), color.b));		
 	}
 

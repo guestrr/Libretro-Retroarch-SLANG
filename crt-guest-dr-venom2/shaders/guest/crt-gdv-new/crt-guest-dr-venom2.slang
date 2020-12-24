@@ -27,7 +27,7 @@ layout(push_constant) uniform Push
 {
 	float TATE, IOS, OS, BLOOM, brightboost, brightboost1, gsl, scanline1, scanline2, beam_min, beam_max, beam_size,
       h_sharp, s_sharp, csize, bsize, warpX, warpY, glow, shadowMask, masksize, vertmask,
-      slotmask, slotwidth, double_slot, mcut, maskDark, maskLight, maskstr, gamma_out, spike;
+      slotmask, slotwidth, double_slot, mcut, maskDark, maskLight, maskstr, spike, inters;
 } params;
 
 layout(std140, set = 0, binding = 0) uniform UBO
@@ -47,6 +47,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
 	float smart_ei;
 	float ei_limit;
 	float sth;
+	float gamma_out;
 } global;
 
 
@@ -184,8 +185,10 @@ layout(std140, set = 0, binding = 0) uniform UBO
 #define mclip  global.mclip     // Slot Mask Size
 
 #pragma parameter gamma_out "Gamma out" 2.4 1.0 5.0 0.05
-#define gamma_out    params.gamma_out     // output gamma
+#define gamma_out    global.gamma_out     // output gamma
 
+#pragma parameter inters "          Interlacing Effect Smoothness" 0.0 0.0 0.5 0.05 // Joint parameter with linearize pass, values must match
+#define inters  params.inters     // interlacing effect smoothing
 
 #define COMPAT_TEXTURE(c,d) texture(c,d)
 #define TEX0 vTexCoord
@@ -431,7 +434,7 @@ void main()
 	float lum = COMPAT_TEXTURE(AvgLumPass, vec2(0.1,0.1)).a;
 	float gamma_in = 1.0/COMPAT_TEXTURE(LinearizePass, vec2(0.25,0.25)).a;
 	float inter = COMPAT_TEXTURE(LinearizePass, vec2(0.75,0.25)).a;
-	bool interb  = (inter < 0.75);
+	bool interb  = (inter < 0.5);
 	
 	// Calculating texel coordinates
    
@@ -481,7 +484,7 @@ void main()
 	
 	vec2 pC4 = floor(OGL2Pos) * ps + 0.5*ps; 
 	
-	if (interb) pC4.y = pos.y - inter * SourceSize.w;
+	if (interb)  pC4.y = pos.y - inters * SourceSize.w;
 	
 	float zero = exp2(-h_sharp);
 	float sharp1 = s_sharp * zero;
@@ -580,9 +583,7 @@ void main()
 
 	vec3 scolor2, mcolor2;
 	
-	if (!interb)
-	{
-	
+	if (interb) pC4.y = pC4.y + 2.0 * inters * SourceSize.w; else
 	pC4+=offy;
 	
 	l3 = COMPAT_TEXTURE(LinearizePass, pC4 -off2).rgb;
@@ -623,12 +624,13 @@ void main()
 	scolor2 = pow(scolor2, gtmp);	mcolor2 = scolor2;
 	scolor2 = min(mix(color2, scolor2, spike),1.0);
 	
-	}
-	
 	// calculating scanlines
-	
+
+	vec3 ctmp; vec3 mcolor; float w3; vec3 color;
 	vec3 one = vec3(1.0);
-	
+
+if (!interb)
+{	
 	float shape1 = mix(scanline1, scanline2, f);
 	float shape2 = mix(scanline1, scanline2, 1.0-f);	
 	
@@ -637,9 +639,9 @@ void main()
 
 	vec3 color00 = color1*wt1 + color2*wt2;
 	vec3 scolor0 = scolor1*wt1 + scolor2*wt2;
-	vec3 mcolor  = (mcolor1*wt1 + mcolor2*wt2)/(wt1+wt2);
+	mcolor  = (mcolor1*wt1 + mcolor2*wt2)/(wt1+wt2);
 	
-	vec3 ctmp = color00/(wt1+wt2);
+	ctmp = color00/(wt1+wt2);
 	vec3 sctmp = scolor0/(wt1+wt2);
 	
 	float wf1, wf2;
@@ -691,13 +693,14 @@ void main()
 		cd2 = mix(one, vec3(v_low, v_high2, v_low), ds2);
 	}
 	
-	vec3 color = gc(color1)*w1*cd1 + gc(color2)*w2*cd2;
+	color = gc(color1)*w1*cd1 + gc(color2)*w2*cd2;
 	color = min(color, 1.0);
-	float w3 = wf1+wf2;
+	w3 = wf1+wf2;
+}
 	
 	if (interb) 
 	{
-		color = color1;
+		color = gc(0.5*(color1+color2));
 		mcolor = vec3(max(max(color.r,color.g), color.b));		
 	}
 
