@@ -1,5 +1,26 @@
 #version 450
 
+/*
+   Interlacing
+   
+   Copyright (C) 2020 guest(r) - guest.r@gmail.com
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   
+*/ 
+
 #pragma format R32G32B32A32_SFLOAT
 
 layout(push_constant) uniform Push
@@ -72,7 +93,7 @@ layout(set = 0, binding = 2) uniform sampler2D PrePass;
 #define COMPAT_TEXTURE(c,d) texture(c,d)
 
 
-vec3 level (vec3 tar, vec3 ref)
+vec3 transplant (vec3 tar, vec3 ref)
 {
 	float t = max(max(tar.r,tar.g),tar.b) + 0.00001;
 	float r = max(max(ref.r,ref.g),ref.b);
@@ -110,7 +131,7 @@ void main()
 		float line_no  = floor(mod(params.OriginalSize.y*vTexCoord.y, 2.0));
 		float frame_no = floor(mod(float(params.FrameCount),2.0));
 		float ii = abs(line_no-frame_no);
-		if (interm == 1.0) { res = max(res1*ii, (1.0-iscan)*min(res1,res2)); res = level(mix(res2, res1, ii), res); }
+		if (interm == 1.0) { res = max(res1*ii, (1.0-iscan)*min(res1,res2)); res = transplant(mix(res2, res1, ii), res); }
 	}
 	
 	float gamma_in = 1.0/GAMMA_INPUT;
