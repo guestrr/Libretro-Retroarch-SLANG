@@ -109,10 +109,12 @@ void main()
 
 		float m1 = min(max(max(c1.r,c1.g),c1.b), 1.0);
 		float m2 = min(max(max(c2.r,c2.g),c2.b), 1.0);
-
+		vec3 df = abs(c1-c2);
+		float d = max(max(df.r,df.g),df.b);
+		
 		float r;
 		
-		if (interm == 1.0) {r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); c = plant(c1*ii + 0.0001*mix(c1,c2, min(mix(m1*m1, 1.0-m2, min(m1,1.0-m1))+2.0*inters,1.0)), r);}
+		if (interm == 1.0) {r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); c = plant(c1*ii + 0.0001*mix(c1,c2, min(mix(m1, (1.0-m2), min(m1,1.0-m1))/(d+0.00001)+2.0*inters,1.0)), r);}
 	}
 	
 	float gamma_in = 1.0/GAMMA_INPUT;

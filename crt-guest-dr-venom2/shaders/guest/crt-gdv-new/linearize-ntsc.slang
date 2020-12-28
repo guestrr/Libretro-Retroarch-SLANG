@@ -89,7 +89,6 @@ void main()
 layout(location = 0) in vec2 vTexCoord;
 layout(location = 0) out vec4 FragColor;
 layout(set = 0, binding = 2) uniform sampler2D PrePass;
-layout(set = 0, binding = 3) uniform sampler2D PrePassFeedback;
 
 #define COMPAT_TEXTURE(c,d) texture(c,d)
 
@@ -134,10 +133,11 @@ void main()
 		
 		float m1 = min(max(max(res1.r,res1.g),res1.b), 1.0);
 		float m2 = min(max(max(res2.r,res2.g),res2.b), 1.0);
-		
+		vec3 df  = abs(res1-res2);
+		float d  = max(max(df.r,df.g),df.b);		
 		float r;
 		
-		if (interm == 1.0) { r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); res = plant(res1*ii + 0.0001*mix(res1,res2, min(mix(m1*m1, 1.0-m2, min(m1,1.0-m1))+2.0*inters,1.0)), r); }
+		if (interm == 1.0) { r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); res = plant(res1*ii + 0.0001*mix(c1,c2, min(mix(m1, (1.0-m2), min(m1,1.0-m1))/(d+0.00001)+2.0*inters,1.0)), r); }
 	}
 	
 	float gamma_in = 1.0/GAMMA_INPUT;
