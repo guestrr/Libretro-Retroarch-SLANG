@@ -19,7 +19,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    
-*/ 
+*/  
 
 #pragma format R32G32B32A32_SFLOAT
 
@@ -61,7 +61,7 @@ layout(push_constant) uniform Push
 #pragma parameter inters "          Interlacing Effect Smoothness" 0.0 0.0 0.5 0.05 // Joint parameter with main pass, values must match
 #define inters  params.inters     // interlacing effect smoothing
 
-#pragma parameter iscan "          Interlacing Scanline Effect" 0.40 0.0 1.0 0.05
+#pragma parameter iscan "          Interlacing Scanline Effect" 0.20 0.0 1.0 0.05
 #define iscan  params.iscan     // interlacing effect scanlining
 
 #pragma parameter intres "          Internal Resolution: 1.0:240p, 1.5...y-dowsample" 0.0 0.0 4.0 0.5 // Joint parameter with main pass, values must match
@@ -89,14 +89,14 @@ void main()
 layout(location = 0) in vec2 vTexCoord;
 layout(location = 0) out vec4 FragColor;
 layout(set = 0, binding = 2) uniform sampler2D PrePass;
+layout(set = 0, binding = 3) uniform sampler2D PrePassFeedback;
 
 #define COMPAT_TEXTURE(c,d) texture(c,d)
 
 
-vec3 transplant (vec3 tar, vec3 ref)
+vec3 plant (vec3 tar, float r)
 {
 	float t = max(max(tar.r,tar.g),tar.b) + 0.00001;
-	float r = max(max(ref.r,ref.g),ref.b);
 	return tar * r / t;
 }
 
@@ -131,7 +131,13 @@ void main()
 		float line_no  = floor(mod(params.OriginalSize.y*vTexCoord.y, 2.0));
 		float frame_no = floor(mod(float(params.FrameCount),2.0));
 		float ii = abs(line_no-frame_no);
-		if (interm == 1.0) { res = max(res1*ii, (1.0-iscan)*min(res1,res2)); res = transplant(mix(res2, res1, ii), res); }
+		
+		float m1 = min(max(max(res1.r,res1.g),res1.b), 1.0);
+		float m2 = min(max(max(res2.r,res2.g),res2.b), 1.0);
+		
+		float r;
+		
+		if (interm == 1.0) { r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); res = plant(res1*ii + 0.0001*mix(res1,res2, min(mix(m1*m1, 1.0-m2, min(m1,1.0-m1))+2.0*inters,1.0)), r); }
 	}
 	
 	float gamma_in = 1.0/GAMMA_INPUT;

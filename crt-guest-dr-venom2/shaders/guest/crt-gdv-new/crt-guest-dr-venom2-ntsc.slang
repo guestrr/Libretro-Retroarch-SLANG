@@ -177,7 +177,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
 #pragma parameter gamma_out "Gamma out" 2.4 1.0 5.0 0.05
 #define gamma_out    global.gamma_out     // output gamma
 
-#pragma parameter inters "          Interlacing Effect Smoothness" 0.0 0.0 0.5 0.05 // Joint parameter with linearize pass, values must match
+#pragma parameter inters "          Interlacing Effect Smoothness" 0.0 0.0 0.5 0.05 // Joint parameter with linearize-ntsc pass, values must match
 #define inters  params.inters     // interlacing effect smoothing
 
 

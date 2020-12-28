@@ -19,7 +19,7 @@
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    
-*/ 
+*/  
 
 #pragma format R32G32B32A32_SFLOAT
 
@@ -57,7 +57,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
 #pragma parameter inters "          Interlacing Effect Smoothness" 0.0 0.0 0.5 0.05 // // Joint parameter with main pass, values must match
 #define inters  params.inters     // interlacing effect smoothing
 
-#pragma parameter iscan "          Interlacing Scanline Effect" 0.40 0.0 1.0 0.05
+#pragma parameter iscan "          Interlacing Scanline Effect" 0.20 0.0 1.0 0.05
 #define iscan  params.iscan     // interlacing effect scanlining
 
 
@@ -81,13 +81,16 @@ layout(set = 0, binding = 2) uniform sampler2D PrePass;
 #define SourceSize  params.SourceSize
 
 
-vec3 transplant (vec3 tar, vec3 ref)
+vec3 plant (vec3 tar, float r)
 {
 	float t = max(max(tar.r,tar.g),tar.b) + 0.00001;
-	float r = max(max(ref.r,ref.g),ref.b);
 	return tar * r / t;
 }
 
+float df(vec3 c1, vec3 c2)
+{
+	return dot(abs(c1-c2), 1.0.xxx);
+} 
 
 void main()
 {
@@ -103,7 +106,13 @@ void main()
 		float line_no  = floor(mod(params.OriginalSize.y*vTexCoord.y, 2.0));
 		float frame_no = floor(mod(float(params.FrameCount),2.0));
 		float ii = abs(line_no-frame_no);
-		if (interm == 1.0) { c = max(c1*ii, (1.0-iscan)*min(c1,c2)); c = transplant(mix(c2, c1, ii), c); }
+
+		float m1 = min(max(max(c1.r,c1.g),c1.b), 1.0);
+		float m2 = min(max(max(c2.r,c2.g),c2.b), 1.0);
+
+		float r;
+		
+		if (interm == 1.0) {r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); c = plant(c1*ii + 0.0001*mix(c1,c2, min(mix(m1*m1, 1.0-m2, min(m1,1.0-m1))+2.0*inters,1.0)), r);}
 	}
 	
 	float gamma_in = 1.0/GAMMA_INPUT;
