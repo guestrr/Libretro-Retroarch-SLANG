@@ -119,9 +119,11 @@ void main()
 	
 	res1.rb = mix(c1.rb, vec2(r1,b1), deconstr);
 	res2.rb = mix(c2.rb, vec2(r2,b2), deconstr);
+	
 	vec3 res = res1;
-
+	float gamma_in = 1.0/GAMMA_INPUT;
 	float intera = 1.0;
+	
 	float yres_div = 1.0; if (intres > 1.25) yres_div = intres;
 	
 	if (inter < SourceSize.y/yres_div && interm > 0.5 && intres != 1.0)
@@ -137,11 +139,13 @@ void main()
 		float d  = max(max(df.r,df.g),df.b);		
 		float r;
 		
-		if (interm == 1.0) { r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); res = plant(res1*ii + 0.0001*mix(c1,c2, min(mix(m1, (1.0-m2), min(m1,1.0-m1))/(d+0.00001)+2.0*inters,1.0)), r); }
+		if (interm == 1.0) { r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); res = plant(res1*ii + 0.0001*mix(res1,res2, min(mix(m1, (1.0-m2), min(m1,1.0-m1))/(d+0.00001)+2.0*inters,1.0)), r); }
+		res = pow(res, vec3(GAMMA_INPUT*0.75));
+		gamma_in = 1.0/(GAMMA_INPUT*0.75);		
 	}
+	else res = pow(res, vec3(GAMMA_INPUT));
 	
-	float gamma_in = 1.0/GAMMA_INPUT;
 	if (vTexCoord.x > 0.5) gamma_in = intera;	
 	
-	FragColor = vec4(pow(res, vec3(GAMMA_INPUT)), gamma_in);
+	FragColor = vec4(res, gamma_in);
 }

@@ -99,6 +99,7 @@ void main()
 	vec3  c  = c1;
 
 	float intera = 1.0;
+	float gamma_in = 1.0/GAMMA_INPUT;
 	
 	if (inter < params.OriginalSize.y && interm > 0.5)
 	{
@@ -115,10 +116,12 @@ void main()
 		float r;
 		
 		if (interm == 1.0) {r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); c = plant(c1*ii + 0.0001*mix(c1,c2, min(mix(m1, (1.0-m2), min(m1,1.0-m1))/(d+0.00001)+2.0*inters,1.0)), r);}
+		c = pow(c, vec3(GAMMA_INPUT*0.75));
+		gamma_in = 1.0/(GAMMA_INPUT*0.75);
 	}
+	else c = pow(c, vec3(GAMMA_INPUT));
 	
-	float gamma_in = 1.0/GAMMA_INPUT;
 	if (vTexCoord.x > 0.5) gamma_in = intera;
 	
-	FragColor = vec4(pow(c, vec3(GAMMA_INPUT)), gamma_in);
+	FragColor = vec4(c, gamma_in);
 }

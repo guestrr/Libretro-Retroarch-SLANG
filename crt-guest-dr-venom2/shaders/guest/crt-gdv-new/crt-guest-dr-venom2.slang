@@ -53,7 +53,7 @@ layout(std140, set = 0, binding = 0) uniform UBO
 
 #pragma parameter bogus_brightness "[ BRIGHTNESS SETTINGS ]:" 0.0 0.0 1.0 1.0
 
-#pragma parameter glow "          Glow Strength" 0.10 0.0 2.0 0.01
+#pragma parameter glow "          Glow Strength" 0.08 0.0 2.0 0.01
 #define glow         params.glow     // Glow Strength
 
 #pragma parameter bloom "          Bloom Strength" 0.0 0.0 2.0 0.05
@@ -740,8 +740,9 @@ if (!interb)
 
 	Glow = mix(Glow, 0.25*color, 0.7*colmx);
 	color = color + 0.5*glow*Glow;
-		
-	color = pow(color, vec3(1.0/gamma_out));
+	
+	if (interb) color = pow(color, vec3(1.0/(0.75*gamma_out)));
+	else color = pow(color, vec3(1.0/gamma_out));
 	
 	FragColor = vec4(color*corner(pos0), 1.0);
 }

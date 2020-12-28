@@ -35,10 +35,10 @@ layout(push_constant) uniform Push
 
 #pragma parameter bogus_glow "[ GLOW/BLOOM PASS SETTINGS ]:" 0.0 0.0 1.0 1.0
 
-#pragma parameter SIZEH "          H. Glow Radius" 6.0 1.0 30.0 1.0 
+#pragma parameter SIZEH "          H. Glow Radius" 5.0 1.0 30.0 1.0 
 #define SIZEH params.SIZEH
 
-#pragma parameter SIGMA_H "          Horizontal Glow Sigma" 1.50 0.5 15.0 0.10
+#pragma parameter SIGMA_H "          Horizontal Glow Sigma" 1.25 0.5 15.0 0.10
 #define SIGMA_H params.SIGMA_H
 
 layout(std140, set = 0, binding = 0) uniform UBO
