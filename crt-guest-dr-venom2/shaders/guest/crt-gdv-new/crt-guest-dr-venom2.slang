@@ -433,8 +433,8 @@ void main()
 	
 	float lum = COMPAT_TEXTURE(AvgLumPass, vec2(0.1,0.1)).a;
 	float gamma_in = 1.0/COMPAT_TEXTURE(LinearizePass, vec2(0.25,0.25)).a;
-	float inter = COMPAT_TEXTURE(LinearizePass, vec2(0.75,0.25)).a;
-	bool interb  = (inter < 0.5);
+	float intera = COMPAT_TEXTURE(LinearizePass, vec2(0.75,0.25)).a;
+	bool interb  = (intera < 0.75);
 	
 	// Calculating texel coordinates
    
@@ -583,7 +583,7 @@ void main()
 
 	vec3 scolor2, mcolor2;
 	
-	if (interb) pC4.y = pC4.y + 2.0 * inters * SourceSize.w; else
+	if (interb) pC4.y = pos.y + inters * SourceSize.w; else
 	pC4+=offy;
 	
 	l3 = COMPAT_TEXTURE(LinearizePass, pC4 -off2).rgb;
@@ -727,7 +727,7 @@ if (!interb)
 	if (interb) ctmp = color;
 	float colmx = pow( max( max(ctmp.r, ctmp.g), ctmp.b), 1.40/gamma_out);
 	float bb = mix(brightboost, brightboost1, colmx);
-	bb = (interb) ? sqrt(bb) : bb;	
+	if (interb) bb = (abs(intera-0.5)<0.1) ? pow(0.80*bb, 0.65) : pow(bb, 0.70);
 	color*=bb;
 
 	vec3  Glow = COMPAT_TEXTURE(GlowPass, pos   ).rgb;
@@ -741,8 +741,10 @@ if (!interb)
 	Glow = mix(Glow, 0.25*color, 0.7*colmx);
 	color = color + 0.5*glow*Glow;
 	
-	if (interb) color = pow(color, vec3(1.0/(0.75*gamma_out)));
-	else color = pow(color, vec3(1.0/gamma_out));
+	float gmo = 1.0/gamma_out;
+	if (interb) gmo = gmo / 0.70;
+	
+	color = pow(color, vec3(gmo));
 	
 	FragColor = vec4(color*corner(pos0), 1.0);
 }

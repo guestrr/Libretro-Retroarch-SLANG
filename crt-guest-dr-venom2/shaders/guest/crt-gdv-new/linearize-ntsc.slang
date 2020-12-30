@@ -128,20 +128,25 @@ void main()
 	
 	if (inter < SourceSize.y/yres_div && interm > 0.5 && intres != 1.0)
 	{
-		intera = 0.0;
+		intera = 0.5;
 		float line_no  = floor(mod(params.OriginalSize.y*vTexCoord.y, 2.0));
 		float frame_no = floor(mod(float(params.FrameCount),2.0));
 		float ii = abs(line_no-frame_no);
 		
-		float m1 = min(max(max(res1.r,res1.g),res1.b), 1.0);
-		float m2 = min(max(max(res2.r,res2.g),res2.b), 1.0);
+		float m1 = max(max(res1.r,res1.g),res1.b);
+		float m2 = max(max(res2.r,res2.g),res2.b);
 		vec3 df  = abs(res1-res2);
-		float d  = max(max(df.r,df.g),df.b);		
+		float d  = max(max(df.r,df.g),df.b);	
 		float r;
 		
-		if (interm == 1.0) { r = max(m1*ii, (1.0-iscan)*mix(min(m1,m2), mix(m2,m1,ii), 2.0*inters)); res = plant(res1*ii + 0.0001*mix(res1,res2, min(mix(m1, (1.0-m2), min(m1,1.0-m1))/(d+0.00001)+2.0*inters,1.0)), r); }
-		res = pow(res, vec3(GAMMA_INPUT*0.75));
-		gamma_in = 1.0/(GAMMA_INPUT*0.75);		
+		if (interm == 1.0) 
+		{
+			r = max(m1*ii, (1.0-iscan)*min(m1,m2));
+			res = plant( mix(mix(res1,res2, min(mix(m1, (1.0-m2), min(m1,1.0-m1))/(d+0.00001),1.0)), res1, ii), r);
+			intera = 0.0;
+		}
+		res = pow(res, vec3(GAMMA_INPUT*0.70));
+		gamma_in = 1.0/(GAMMA_INPUT*0.70);		
 	}
 	else res = pow(res, vec3(GAMMA_INPUT));
 	
