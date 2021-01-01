@@ -17,13 +17,15 @@ filter_linear2 = false
 scale_type2 = source
 scale2 = 1.0
 
-textures = "SamplerLUT1;SamplerLUT2;SamplerLUT3"
+textures = "SamplerLUT1;SamplerLUT2;SamplerLUT3;SamplerLUT4"
 SamplerLUT1 = shaders/guest/lut/sony_trinitron1.png
 SamplerLUT1_linear = true 
 SamplerLUT2 = shaders/guest/lut/sony_trinitron2.png
 SamplerLUT2_linear = true 
 SamplerLUT3 = shaders/guest/lut/other1.png
 SamplerLUT3_linear = true
+SamplerLUT4 = shaders/guest/lut/custom_lut.png
+SamplerLUT4_linear = true
 
 shader3 = shaders/guest/crt-gdv-new/ntsc/ntsc-pass1.slang
 shader4 = shaders/guest/crt-gdv-new/ntsc/ntsc-pass2.slang

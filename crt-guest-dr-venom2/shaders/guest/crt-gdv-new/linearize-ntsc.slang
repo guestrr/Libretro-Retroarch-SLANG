@@ -55,7 +55,8 @@ layout(push_constant) uniform Push
 #pragma parameter inter "          Interlace Trigger Resolution :" 350.0 0.0 800.0 25.0
 #define inter         params.inter     // interlace resolution
 
-#pragma parameter interm "          Interlace Mode: OFF, Normal, Interpolation" 1.0 0.0 2.0 1.0
+#pragma parameter interm "          Interlace Mode: OFF, Normal 1-3, Interpolation 4-5" 1.0 0.0 5.0 1.0
+#define interm         params.interm     // interlace mode
 #define interm         params.interm     // interlace mode
 
 #pragma parameter inters "          Interlacing Effect Smoothness" 0.0 0.0 0.5 0.05 // Joint parameter with main pass, values must match
@@ -133,18 +134,24 @@ void main()
 		float frame_no = floor(mod(float(params.FrameCount),2.0));
 		float ii = abs(line_no-frame_no);
 		
-		float m1 = max(max(res1.r,res1.g),res1.b);
-		float m2 = max(max(res2.r,res2.g),res2.b);
-		vec3 df  = abs(res1-res2);
-		float d  = max(max(df.r,df.g),df.b);	
+		float m1 = max(max(c1.r,c1.g),c1.b);
+		float m2 = max(max(c2.r,c2.g),c2.b);
+		vec3 df = abs(c1-c2);
+		
+		float d = max(max(df.r,df.g),df.b);
+		if (interm == 2.0) d = mix(0.1*d,10.0*d, step(m1/(m2+0.0001),m2/(m1+0.0001)));
+		
 		float r;
 		
-		if (interm == 1.0) 
+		if (interm < 3.5)
 		{
 			r = max(m1*ii, (1.0-iscan)*min(m1,m2));
 			res = plant( mix(mix(res1,res2, min(mix(m1, (1.0-m2), min(m1,1.0-m1))/(d+0.00001),1.0)), res1, ii), r);
+			if (interm == 3.0) res = (1.0-0.5*iscan)*mix(res2, res1, ii);			
 			intera = 0.0;
 		}
+		if (interm == 5.0) { res = mix(res2, res1, 0.5); intera = 0.5; }		
+		
 		res = pow(res, vec3(GAMMA_INPUT*0.70));
 		gamma_in = 1.0/(GAMMA_INPUT*0.70);		
 	}

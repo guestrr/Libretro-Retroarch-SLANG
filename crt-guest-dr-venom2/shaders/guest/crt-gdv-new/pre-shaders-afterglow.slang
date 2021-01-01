@@ -8,6 +8,7 @@ layout(push_constant) uniform Push
    vec4 OutputSize;
    uint FrameCount;
    float TNTC;
+   float LS, LUTLOW, LUTBR;   
    float CP, CS;
    float WP;
    float wp_saturation;
@@ -22,8 +23,17 @@ layout(push_constant) uniform Push
 
 #pragma parameter bogus_color "[ COLOR TWEAKS ]:" 0.0 0.0 1.0 1.0
 
-#pragma parameter TNTC "          LUT Colors" 0.0 0.0 3.0 1.0
+#pragma parameter TNTC "          LUT Number/Colors (1.0-4.0)" 0.0 0.0 4.0 1.0
 #define TNTC params.TNTC
+
+#pragma parameter LS "          LUT Size" 32.0 32.0 64.0 32.0
+#define LS params.LS
+
+#pragma parameter LUTLOW "          Fix LUT Dark - Range" 12.0 0.0 50.0 1.0
+#define LUTLOW params.LUTLOW
+
+#pragma parameter LUTBR "          Fix LUT Brightness" 1.0 0.0 1.0 0.05
+#define LUTBR params.LUTBR
 
 #pragma parameter CP "          CRT Color Profile" 0.0 -1.0 5.0 1.0 
 #pragma parameter CS "          Color Space: sRGB, DCI, Adobe, Rec.2020" 0.0 0.0 3.0 1.0 
@@ -61,9 +71,8 @@ layout(set = 0, binding = 3) uniform sampler2D AfterglowPass;
 layout(set = 0, binding = 4) uniform sampler2D SamplerLUT1;
 layout(set = 0, binding = 5) uniform sampler2D SamplerLUT2;
 layout(set = 0, binding = 6) uniform sampler2D SamplerLUT3;
+layout(set = 0, binding = 7) uniform sampler2D SamplerLUT4;
 
-
-#define LUT_Size 32.0
 #define COMPAT_TEXTURE(c,d) texture(c,d)
 
 
@@ -161,6 +170,16 @@ vec4 mixfix(vec4 a, vec4 b, float c)
 }
 
 
+vec3 fix_lut(vec3 lutcolor, vec3 ref)
+{
+	float r = length(ref);
+	float l = length(lutcolor);
+	float m = max(max(ref.r,ref.g),ref.b);
+	ref = normalize(lutcolor + 0.0000001) * mix(r, l, pow(m,1.5));
+	return mix(lutcolor, ref, LUTBR);
+}
+
+
 void main()
 {
    vec4 imgColor = COMPAT_TEXTURE(StockPass, vTexCoord.xy);
@@ -179,43 +198,46 @@ void main()
    }
    else
    {
-      float red = ( imgColor.r * (LUT_Size - 1.0) + 0.499999 ) / (LUT_Size * LUT_Size);
-      float green = ( imgColor.g * (LUT_Size - 1.0) + 0.499999 ) / LUT_Size;
-      float blue1 = (floor( imgColor.b  * (LUT_Size - 1.0) ) / LUT_Size) + red;
-      float blue2 = (ceil( imgColor.b  * (LUT_Size - 1.0) ) / LUT_Size) + red;
-      float mixer = clamp(max((imgColor.b - blue1) / (blue2 - blue1), 0.0), 0.0, 32.0);
+	  float lutlow = LUTLOW/255.0;
+	  vec3 lut_ref = (imgColor.rgb + lutlow)/(1.0 + lutlow);
+	  float red = ( lut_ref.r * (LS - 1.0) + 0.499999 ) / (LS * LS);
+      float green = ( lut_ref.g * (LS - 1.0) + 0.499999 ) / LS;
+      float blue1 = (floor( lut_ref.b  * (LS - 1.0) ) / LS) + red;
+      float blue2 = (ceil( lut_ref.b  * (LS - 1.0) ) / LS) + red;
+      float mixer = clamp(max((lut_ref.b - blue1) / (blue2 - blue1), 0.0), 0.0, LS);
       vec4 color1, color2, res;
       if (int(TNTC) == 1)
       {
          color1 = COMPAT_TEXTURE( SamplerLUT1, vec2( blue1, green ));
          color2 = COMPAT_TEXTURE( SamplerLUT1, vec2( blue2, green ));
          res = mixfix(color1, color2, mixer);
-         float mx = max(res.r,max(res.g,res.b));
-         float l = mix(length(imgColor.rgb), length(res.rgb), max(mx-0.5,0.0));
-         res.rgb = mix(imgColor.rgb, res.rgb, clamp(25.0*(mx-0.02),0.0,1.0));
-         res.rgb = normalize(res.rgb+1e-10)*l;
       }
       else if (int(TNTC) == 2)
       {
          color1 = COMPAT_TEXTURE( SamplerLUT2, vec2( blue1, green ));
          color2 = COMPAT_TEXTURE( SamplerLUT2, vec2( blue2, green ));
          res = mixfix(color1, color2, mixer);
-         float l = mix(length(imgColor.rgb), length(res.rgb), 0.4);
-         res.rgb = normalize(res.rgb + 1e-10)*l;
       }	
       else if (int(TNTC) == 3)
       {
          color1 = COMPAT_TEXTURE( SamplerLUT3, vec2( blue1, green ));
          color2 = COMPAT_TEXTURE( SamplerLUT3, vec2( blue2, green ));
          res = mixfix(color1, color2, mixer);
-         res.rgb = pow(res.rgb, vec3(1.0/1.20));
-         
-         if ( max(max(imgColor.r, imgColor.g),imgColor.b) < 10.0/255.0) res.rgb = imgColor.rgb;
-		 
-         float l = length(imgColor.rgb);
-         res.rgb = normalize(res.rgb + 1e-10)*l;
       }	
-      
+
+      else if (int(TNTC) == 4)
+      {
+         color1 = COMPAT_TEXTURE( SamplerLUT4, vec2( blue1, green ));
+         color2 = COMPAT_TEXTURE( SamplerLUT4, vec2( blue2, green ));
+         res = mixfix(color1, color2, mixer);
+      }	
+
+      if (imgColor.r == 0.0) res.r = 0.0;
+      if (imgColor.g == 0.0) res.g = 0.0;
+      if (imgColor.b == 0.0) res.b = 0.0;
+
+      res.rgb = fix_lut (res.rgb, imgColor.rgb);
+	  
       color = mix(imgColor.rgb, res.rgb, min(TNTC,1.0));
    }
 

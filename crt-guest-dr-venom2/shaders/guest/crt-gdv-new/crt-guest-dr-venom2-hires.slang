@@ -243,7 +243,7 @@ vec3 Mask(vec2 pos, float mx)
 	pos = floor(pos/masksize);
 	vec3 mask = vec3(maskDark, maskDark, maskDark);
 	vec3 one = vec3(1.0);
-	float dark_compensate  = mix(max( clamp( mix (mcut, maskstr, mx),0.0, 1.0) - 0.5, 0.0) + 1.0, 1.0, mx);
+	float dark_compensate  = mix(max( clamp( mix (mcut, maskstr, mx),0.0, 1.0) - 0.3, 0.0) + 1.0, 1.0, mx);
 	float mc = 1.0 - max(maskstr, 0.0);	
 	
 	// No mask
