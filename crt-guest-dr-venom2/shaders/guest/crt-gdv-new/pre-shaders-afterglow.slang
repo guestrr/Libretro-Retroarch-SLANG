@@ -32,7 +32,7 @@ layout(push_constant) uniform Push
 #pragma parameter LUTLOW "          Fix LUT Dark - Range" 12.0 0.0 50.0 1.0
 #define LUTLOW params.LUTLOW
 
-#pragma parameter LUTBR "          Fix LUT Brightness" 1.0 0.0 1.0 0.05
+#pragma parameter LUTBR "          Fix LUT Brightness" 1.0 0.0 1.0 0.10
 #define LUTBR params.LUTBR
 
 #pragma parameter CP "          CRT Color Profile" 0.0 -1.0 5.0 1.0 
@@ -199,7 +199,7 @@ void main()
    else
    {
 	  float lutlow = LUTLOW/255.0;
-	  vec3 lut_ref = (imgColor.rgb + lutlow)/(1.0 + lutlow);
+	  vec3 lut_ref = imgColor.rgb + lutlow*(1.0 - pow(imgColor.rgb, 0.333.xxx));
 	  float red = ( lut_ref.r * (LS - 1.0) + 0.499999 ) / (LS * LS);
       float green = ( lut_ref.g * (LS - 1.0) + 0.499999 ) / LS;
       float blue1 = (floor( lut_ref.b  * (LS - 1.0) ) / LS) + red;
