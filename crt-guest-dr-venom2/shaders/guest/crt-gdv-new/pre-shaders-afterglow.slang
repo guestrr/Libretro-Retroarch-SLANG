@@ -1,5 +1,25 @@
 #version 450
- 
+
+/*
+   CRT GDV Afterglow, color altering
+   
+   Copyright (C) 2019-2021 guest(r) and Dr. Venom
+   
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   
+*/  
 
 layout(push_constant) uniform Push
 {
@@ -8,7 +28,8 @@ layout(push_constant) uniform Push
    vec4 OutputSize;
    uint FrameCount;
    float TNTC;
-   float LS, LUTLOW, LUTBR;   
+   float LS;
+   float LUTLOW, LUTBR;   
    float CP, CS;
    float WP;
    float wp_saturation;
@@ -29,7 +50,7 @@ layout(push_constant) uniform Push
 #pragma parameter LS "          LUT Size" 32.0 32.0 64.0 32.0
 #define LS params.LS
 
-#pragma parameter LUTLOW "          Fix LUT Dark - Range" 12.0 0.0 50.0 1.0
+#pragma parameter LUTLOW "          Fix LUT Dark - Range" 5.0 0.0 50.0 1.0
 #define LUTLOW params.LUTLOW
 
 #pragma parameter LUTBR "          Fix LUT Brightness" 1.0 0.0 1.0 0.10
@@ -161,21 +182,13 @@ const mat3 D65_to_D93 = mat3 (
            0.3555467892,  0.7110935785,  0.1185155964,
            0.2475020592,  0.0990008237,  1.3035108450);
 
-// This shouldn't be necessary but it seems some undefined values can
-// creep in and each GPU vendor handles that differently. This keeps
-// all values within a safe range
-vec4 mixfix(vec4 a, vec4 b, float c)
-{
-	return (a.z < 1.0) ? mix(a, b, c) : a;
-}
-
 
 vec3 fix_lut(vec3 lutcolor, vec3 ref)
 {
 	float r = length(ref);
 	float l = length(lutcolor);
 	float m = max(max(ref.r,ref.g),ref.b);
-	ref = normalize(lutcolor + 0.0000001) * mix(r, l, pow(m,1.5));
+	ref = normalize(lutcolor + 0.0000001) * mix(r, l, pow(m,1.25));
 	return mix(lutcolor, ref, LUTBR);
 }
 
@@ -198,38 +211,40 @@ void main()
    }
    else
    {
-	  float lutlow = LUTLOW/255.0;
+	  float lutlow = LUTLOW/255.0; float invLS = 1.0/LS;
 	  vec3 lut_ref = imgColor.rgb + lutlow*(1.0 - pow(imgColor.rgb, 0.333.xxx));
-	  float red = ( lut_ref.r * (LS - 1.0) + 0.499999 ) / (LS * LS);
-      float green = ( lut_ref.g * (LS - 1.0) + 0.499999 ) / LS;
-      float blue1 = (floor( lut_ref.b  * (LS - 1.0) ) / LS) + red;
-      float blue2 = (ceil( lut_ref.b  * (LS - 1.0) ) / LS) + red;
-      float mixer = clamp(max((lut_ref.b - blue1) / (blue2 - blue1), 0.0), 0.0, LS);
-      vec4 color1, color2, res;
+	  float lutb = lut_ref.b * (1.0-0.5*invLS);	  
+	  lut_ref.rg    = lut_ref.rg * (1.0-invLS) + 0.5*invLS; 
+	  float tile1 = ceil (lutb * (LS-1.0));
+	  float tile0 = max(tile1 - 1.0, 0.0);
+	  float f = fract(lutb * (LS-1.0)); if (f == 0.0) f = 1.0;
+	  vec2 coord0 = vec2(tile0 + lut_ref.r, lut_ref.g)*vec2(invLS, 1.0);
+	  vec2 coord1 = vec2(tile1 + lut_ref.r, lut_ref.g)*vec2(invLS, 1.0);
+	  vec4 color1, color2, res;
+	  
       if (int(TNTC) == 1)
       {
-         color1 = COMPAT_TEXTURE( SamplerLUT1, vec2( blue1, green ));
-         color2 = COMPAT_TEXTURE( SamplerLUT1, vec2( blue2, green ));
-         res = mixfix(color1, color2, mixer);
+         color1 = COMPAT_TEXTURE(SamplerLUT1, coord0);
+         color2 = COMPAT_TEXTURE(SamplerLUT1, coord1);
+         res = mix(color1, color2, f);
       }
       else if (int(TNTC) == 2)
       {
-         color1 = COMPAT_TEXTURE( SamplerLUT2, vec2( blue1, green ));
-         color2 = COMPAT_TEXTURE( SamplerLUT2, vec2( blue2, green ));
-         res = mixfix(color1, color2, mixer);
+         color1 = COMPAT_TEXTURE(SamplerLUT2, coord0);
+         color2 = COMPAT_TEXTURE(SamplerLUT2, coord1);
+         res = mix(color1, color2, f);
       }	
       else if (int(TNTC) == 3)
       {
-         color1 = COMPAT_TEXTURE( SamplerLUT3, vec2( blue1, green ));
-         color2 = COMPAT_TEXTURE( SamplerLUT3, vec2( blue2, green ));
-         res = mixfix(color1, color2, mixer);
+         color1 = COMPAT_TEXTURE(SamplerLUT3, coord0);
+         color2 = COMPAT_TEXTURE(SamplerLUT3, coord1);
+         res = mix(color1, color2, f);
       }	
-
       else if (int(TNTC) == 4)
       {
-         color1 = COMPAT_TEXTURE( SamplerLUT4, vec2( blue1, green ));
-         color2 = COMPAT_TEXTURE( SamplerLUT4, vec2( blue2, green ));
-         res = mixfix(color1, color2, mixer);
+         color1 = COMPAT_TEXTURE(SamplerLUT4, coord0);
+         color2 = COMPAT_TEXTURE(SamplerLUT4, coord1);
+         res = mix(color1, color2, f);
       }	
 
       if (imgColor.r == 0.0) res.r = 0.0;
