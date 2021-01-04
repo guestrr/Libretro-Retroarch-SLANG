@@ -507,12 +507,12 @@ void main()
 
 	float wnorm = max(wl1, wr1);
 
-	float twl3 = max(wl3/wnorm - sharp1, 0.0);
-	float twl2 = max(wl2/wnorm - sharp1, mix(-0.18, 0.0, 1.0-fp1*fp1)); float swl2 = max(twl2, 0.0);
-	float twl1 = max(wl1/wnorm - sharp1, 0.0);
-	float twr1 = max(wr1/wnorm - sharp1, 0.0);
-	float twr2 = max(wr2/wnorm - sharp1, mix(-0.18, 0.0, 1.0-fpx*fpx)); float swr2 = max(twr2, 0.0);
-	float twr3 = max(wr3/wnorm - sharp1, 0.0);
+	float twl3 = max(wl3 - sharp1, 0.0);
+	float twl2 = max(wl2 - sharp1, mix(-0.12, 0.0, 1.0-fp1*fp1)); float swl2 = max(twl2, 0.0);
+	float twl1 = max(wl1 - sharp1, 0.0);
+	float twr1 = max(wr1 - sharp1, 0.0);
+	float twr2 = max(wr2 - sharp1, mix(-0.12, 0.0, 1.0-fpx*fpx)); float swr2 = max(twr2, 0.0);
+	float twr3 = max(wr3 - sharp1, 0.0);
 	
 	bool sharp = (sharp1 > 0.0);
 
