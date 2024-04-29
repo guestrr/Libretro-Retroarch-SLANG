@@ -1,0 +1,9 @@
+shaders = 1
+
+shader0 = shaders/g-sharp2_resampler.slang
+filter_linear0 = false
+scale_type_x0 = absolute
+scale_x0 = 320.0
+scale_type_y0 = absolute
+scale_y0 = 224.0 
+
