@@ -37,11 +37,11 @@ layout(push_constant) uniform Push
 #pragma parameter GSHARP0 "Filter Range" 1.0 0.75 8.0 0.05
 #define GSHARP0 params.GSHARP0
 
-#pragma parameter GBOOST "Filter Boost (same range, speedup)" 1.75 1.0 2.5 0.05
+#pragma parameter GBOOST "Filter Boost (same range, speedup)" 1.70 1.0 2.5 0.05
 #define GBOOST params.GBOOST
 
-#pragma parameter GMAXSHARP "Filter Sharpness" 0.10 0.0 0.25 0.01
-float GMAXSHARP = 0.25*GBOOST*GBOOST*params.GMAXSHARP;
+#pragma parameter GMAXSHARP "Filter Sharpness" 0.12 0.0 0.25 0.01
+float GMAXSHARP = 0.5*GBOOST*GBOOST*params.GMAXSHARP;
 
 #pragma parameter GPAR "Anti-Ringing" 0.50 0.0 1.0 0.10
 #define GPAR params.GPAR
@@ -72,14 +72,14 @@ layout(set = 0, binding = 2) uniform sampler2D Source;
 
 float smothstep(float x)
 {
-	return x*x*(3.0 - 2.0*x);
+	return exp(-2.33*x*x);
 }
 
 float getw(float x)
 {
-	float z = x / GBOOST;
-	float y = smothstep(max(1.0-z,0.0)); x = clamp(x-1.0,0.0,1.0);
-	return max(y*y - GMAXSHARP, mix(-GMAXSHARP, 0.0,  x));
+	float z = x/GBOOST;
+	float y = smothstep(z);
+	return max(y*y - GMAXSHARP, mix(-GMAXSHARP, 0.0, x-1.0));
 }
 
 void main()
@@ -103,7 +103,7 @@ void main()
 	
 	do
 	{
-		fp = abs(x+f);
+		fp = min(abs(x+f),FPR2);
 		pixel  = COMPAT_TEXTURE(Source, tex + x*dx).rgb;		
 		fp = fp/FPR;
 		w = getw(fp);				

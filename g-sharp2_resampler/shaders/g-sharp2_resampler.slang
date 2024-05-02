@@ -70,23 +70,19 @@ layout(set = 0, binding = 2) uniform sampler2D Source;
 #define COMPAT_TEXTURE(c,d) texture(c,d)
 #define SourceSize params.SourceSize
 
+
 float smothstep(float x)
 {
-	return x*x*(3.0 - 2.0*x);
+	return exp(-2.33*x*x);
 }
 
 float getw(float x)
 {
-	float z = x / GBOOST;
-	float y = smothstep(max(1.0-z,0.0)); x = clamp(x-1.0,0.0,1.0);
-	return max(y*y - GMAXSHARP, mix(-GMAXSHARP, 0.0, x));
+	float z = x/GBOOST;
+	float y = smothstep(z);
+	return max(y*y - GMAXSHARP, mix(-GMAXSHARP, 0.0, x-1.0));
 }
 
-vec3 plant (vec3 tar, float r)
-{
-	float t = max(max(tar.r,tar.g),tar.b) + 0.00001;
-	return tar * r / t;
-}
 
 void main()
 {
