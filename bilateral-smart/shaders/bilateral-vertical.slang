@@ -29,18 +29,18 @@ layout(push_constant) uniform Push
 	uint FrameCount;
 	float FRANGE;
 	float FBSMOOTH;
-	float FBOOST;
+	float FSIGMA;
 } params;
 
 
-#pragma parameter FRANGE "Filter Range" 1.0 1.0 10.0 1.0
+#pragma parameter FRANGE "Filter Range" 3.0 1.0 10.0 1.0
 #define FRANGE params.FRANGE
 
-#pragma parameter FBSMOOTH "Filter Base Smoothing" 0.25 0.05 1.0 0.025
+#pragma parameter FBSMOOTH "Filter Base Smoothing" 0.35 0.05 1.0 0.025
 #define FBSMOOTH params.FBSMOOTH
 
-#pragma parameter FBOOST "Boost Smoothing w. dist" 0.0 0.0 5.0 0.25
-#define FBOOST params.FBOOST
+#pragma parameter FSIGMA "Filter Strength" 0.65 0.15 1.5 0.05
+float FSIGMA1 = 1.0/(params.FSIGMA);
 
 layout(std140, set = 0, binding = 0) uniform UBO
 {
@@ -68,12 +68,13 @@ layout(set = 0, binding = 2) uniform sampler2D Source;
 
 float wt(vec3 A, vec3 B)
 {	
-	return clamp(FBSMOOTH - 2.33*dot(abs(A-B),1.0.xxx)/(dot(A+B,1.0.xxx)+1.0), -0.0001, 0.125);
+	return clamp(FBSMOOTH - 2.33*dot(abs(A-B),1.0.xxx)/(dot(A+B,1.0.xxx)+1.0), 0.0, 0.25);
 }
+
 
 float getw(float x, vec3 c, vec3 p)
 {
-	float y = max(1.0-x, 0.0) + FBOOST;
+	float y = pow(1.0-x, FSIGMA1);
 	float d = wt(c,p);
 	return y*d;
 }
@@ -87,30 +88,27 @@ void main()
 	vec2 dy  = vec2(0.0,SourceSize.w);
 	
 	float w, fp;
-	float wsum = 0.125;
+	float wsum = 0.25;
 	vec3 pixel;
 	float FPR = FRANGE;
 	float FPR1 = 1.0/FPR;
 	float LOOPSIZE = FPR;
 	float y = 1.0;
 
-	float wl = 1.0;
-	float wr = 1.0;
-
 	vec3 comp = COMPAT_TEXTURE(Source, tex).rgb;
-	vec3 color = comp * 0.125;
+	vec3 color = comp * wsum;
 	
 	do
 	{
 		pixel  = COMPAT_TEXTURE(Source, tex - y*dy).rgb;		
 		fp = min(abs(-y+f),FPR)*FPR1;
-		w = getw(fp,comp,pixel); if (w < 0.0) wl = 0.0; w = w * wl;			
+		w = getw(fp,comp,pixel);
 		color = color + w * pixel;
 		wsum   = wsum + w;
 
 		pixel  = COMPAT_TEXTURE(Source, tex + y*dy).rgb;		
 		fp = min(abs( y+f),FPR)*FPR1;
-		w = getw(fp,comp,pixel); if (w < 0.0) wr = 0.0; w = w * wr;			
+		w = getw(fp,comp,pixel);		
 		color = color + w * pixel;
 		wsum   = wsum + w;
 
